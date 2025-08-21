@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-module io.helidon.mcp.server {
+import io.helidon.common.features.api.Features;
+import io.helidon.common.features.api.HelidonFlavor;
+
+/**
+ * Helidon extension for MCP server module and API.
+ */
+@Features.Incubating
+@Features.Name("MCP Server")
+@Features.Description("Support for Model Context Protocol Server.")
+@Features.Flavor({HelidonFlavor.SE, HelidonFlavor.MP})
+module io.helidon.extensions.mcp.server {
     requires jakarta.json;
     requires io.helidon.common;
     requires io.helidon.jsonrpc.core;
@@ -22,5 +32,7 @@ module io.helidon.mcp.server {
     requires io.helidon.webserver.sse;
     requires io.helidon.webserver.jsonrpc;
 
-    exports io.helidon.mcp.server;
+    requires static io.helidon.common.features.api;
+
+    exports io.helidon.extensions.mcp.server;
 }
