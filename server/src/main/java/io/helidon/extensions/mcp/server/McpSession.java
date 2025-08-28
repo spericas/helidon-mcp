@@ -16,6 +16,7 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,6 +39,10 @@ class McpSession {
 
     private volatile McpFeatures features;
     private volatile State state = UNINITIALIZED;
+
+    McpSession() {
+        this.capabilities = new HashSet<>();
+    }
 
     McpSession(Set<McpCapability> capabilities) {
         this.capabilities = capabilities;
