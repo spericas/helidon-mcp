@@ -62,26 +62,26 @@ class Langchain4jResourceTemplatesServerTest {
         assertThat(result.size(), is(4));
 
         McpResourceTemplate first = result.getFirst();
-        assertThat(first.name(), is("resource1"));
-        assertThat(first.uriTemplate(), is("https://{path}"));
+        assertThat(first.name(), is("resource"));
+        assertThat(first.uriTemplate(), is("resource::{path}"));
         assertThat(first.mimeType(), is(RESOURCE_MEDIA_TYPE));
         assertThat(first.description(), is(RESOURCE_DESCRIPTION));
 
         McpResourceTemplate second = result.get(1);
-        assertThat(second.name(), is("resource3"));
-        assertThat(second.uriTemplate(), is("git://{path}"));
+        assertThat(second.name(), is("resource1"));
+        assertThat(second.uriTemplate(), is("https://{path}"));
         assertThat(second.mimeType(), is(RESOURCE_MEDIA_TYPE));
         assertThat(second.description(), is(RESOURCE_DESCRIPTION));
 
         McpResourceTemplate third = result.get(2);
-        assertThat(third.name(), is("resource"));
-        assertThat(third.uriTemplate(), is("resource::{path}"));
+        assertThat(third.name(), is("resource2"));
+        assertThat(third.uriTemplate(), is("file://{path}"));
         assertThat(third.mimeType(), is(RESOURCE_MEDIA_TYPE));
         assertThat(third.description(), is(RESOURCE_DESCRIPTION));
 
         McpResourceTemplate fourth = result.get(3);
-        assertThat(fourth.name(), is("resource2"));
-        assertThat(fourth.uriTemplate(), is("file://{path}"));
+        assertThat(fourth.name(), is("resource3"));
+        assertThat(fourth.uriTemplate(), is("git://{path}"));
         assertThat(fourth.mimeType(), is(RESOURCE_MEDIA_TYPE));
         assertThat(fourth.description(), is(RESOURCE_DESCRIPTION));
     }

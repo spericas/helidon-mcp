@@ -41,10 +41,10 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ServerTest
-class AnthropicMultipleResourceTemplateTest {
+class McpSdkMultipleResourceTemplateTest {
     private static McpSyncClient client;
 
-    AnthropicMultipleResourceTemplateTest(WebServer server) {
+    McpSdkMultipleResourceTemplateTest(WebServer server) {
         client = McpClient.sync(HttpClientSseClientTransport.builder("http://localhost:" + server.port())
                                         .sseEndpoint("/")
                                         .build())
@@ -68,11 +68,11 @@ class AnthropicMultipleResourceTemplateTest {
         list = list.reversed();
         assertThat(list.size(), is(3));
 
-        var resource1 = list.getFirst();
-        assertThat(resource1.name(), is("resource1"));
-        assertThat(resource1.description(), is("Resource 1"));
-        assertThat(resource1.uriTemplate(), is(RESOURCE1_URI));
-        assertThat(resource1.mimeType(), is(MediaTypes.TEXT_PLAIN_VALUE));
+        var resource3 = list.getFirst();
+        assertThat(resource3.name(), is("resource3"));
+        assertThat(resource3.description(), is("Resource 3"));
+        assertThat(resource3.uriTemplate(), is(RESOURCE3_URI));
+        assertThat(resource3.mimeType(), is(MediaTypes.APPLICATION_OCTET_STREAM_VALUE));
 
         var resource2 = list.get(1);
         assertThat(resource2.name(), is("resource2"));
@@ -80,11 +80,11 @@ class AnthropicMultipleResourceTemplateTest {
         assertThat(resource2.uriTemplate(), is(RESOURCE2_URI));
         assertThat(resource2.mimeType(), is(MediaTypes.APPLICATION_JSON_VALUE));
 
-        var resource3 = list.get(2);
-        assertThat(resource3.name(), is("resource3"));
-        assertThat(resource3.description(), is("Resource 3"));
-        assertThat(resource3.uriTemplate(), is(RESOURCE3_URI));
-        assertThat(resource3.mimeType(), is(MediaTypes.APPLICATION_OCTET_STREAM_VALUE));
+        var resource1 = list.get(2);
+        assertThat(resource1.name(), is("resource1"));
+        assertThat(resource1.description(), is("Resource 1"));
+        assertThat(resource1.uriTemplate(), is(RESOURCE1_URI));
+        assertThat(resource1.mimeType(), is(MediaTypes.TEXT_PLAIN_VALUE));
     }
 
     @Test
@@ -93,7 +93,7 @@ class AnthropicMultipleResourceTemplateTest {
             client.readResource(new McpSchema.ReadResourceRequest(RESOURCE1_URI));
             fail("Attempt to read resource template must fail");
         } catch (McpError e) {
-            assertThat(e.getMessage(), is("Resource Template cannot be read."));
+            assertThat(e.getMessage(), is("Resource does not exist"));
             assertThat(e.getJsonRpcError().code(), is(JsonRpcError.INVALID_REQUEST));
         }
     }
