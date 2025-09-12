@@ -16,8 +16,27 @@
 
 package io.helidon.extensions.mcp.server;
 
+import io.helidon.common.media.type.MediaType;
+
 /**
- * Image content.
+ * Prompt audio content.
  */
-sealed interface McpImageContent extends McpMediaContent permits McpImageContentImpl {
+final class McpPromptAudioContent implements McpPromptContent {
+    private final McpRole role;
+    private final McpAudioContent audio;
+
+    McpPromptAudioContent(byte[] data, MediaType type, McpRole role) {
+        this.role = role;
+        this.audio = new McpAudioContentImpl(data, type);
+    }
+
+    @Override
+    public McpRole role() {
+        return role;
+    }
+
+    @Override
+    public McpContent content() {
+        return audio;
+    }
 }

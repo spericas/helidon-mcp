@@ -16,8 +16,36 @@
 
 package io.helidon.extensions.mcp.server;
 
-/**
- * Image content.
- */
-sealed interface McpImageContent extends McpMediaContent permits McpImageContentImpl {
+import java.util.Base64;
+
+import io.helidon.common.media.type.MediaType;
+
+final class McpAudioContentImpl implements McpAudioContent {
+    private final byte[] data;
+    private final MediaType type;
+
+    McpAudioContentImpl(byte[] data, MediaType type) {
+        this.data = data;
+        this.type = type;
+    }
+
+    @Override
+    public byte[] data() {
+        return data;
+    }
+
+    @Override
+    public String base64Data() {
+        return Base64.getEncoder().encodeToString(data);
+    }
+
+    @Override
+    public MediaType mediaType() {
+        return type;
+    }
+
+    @Override
+    public ContentType type() {
+        return ContentType.AUDIO;
+    }
 }

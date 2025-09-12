@@ -16,6 +16,8 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.util.Base64;
+
 import io.helidon.common.media.type.MediaType;
 
 final class McpImageContentImpl implements McpImageContent {
@@ -30,6 +32,12 @@ final class McpImageContentImpl implements McpImageContent {
     @Override
     public byte[] data() {
         return data;
+    }
+
+
+    @Override
+    public String base64Data() {
+        return Base64.getEncoder().encodeToString(data);
     }
 
     @Override

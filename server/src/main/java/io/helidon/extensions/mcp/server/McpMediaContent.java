@@ -13,11 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.helidon.extensions.mcp.server;
 
-/**
- * Image content.
- */
-sealed interface McpImageContent extends McpMediaContent permits McpImageContentImpl {
+import io.helidon.common.media.type.MediaType;
+
+sealed interface McpMediaContent extends McpContent permits McpImageContent, McpAudioContent {
+    /**
+     * Image content data.
+     *
+     * @return content
+     */
+    byte[] data();
+
+    /**
+     * Media content data encoded in base64.
+     *
+     * @return content in base64.
+     */
+    String base64Data();
+
+    /**
+     * Image content MIME type.
+     *
+     * @return MIME type
+     */
+    MediaType mediaType();
 }
+

@@ -16,6 +16,8 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.util.Base64;
+
 import io.helidon.common.media.type.MediaType;
 
 final class McpResourceBinaryContent implements McpResourceContent {
@@ -40,5 +42,9 @@ final class McpResourceBinaryContent implements McpResourceContent {
     @Override
     public ContentType type() {
         return ContentType.RESOURCE;
+    }
+
+    public String base64Data() {
+        return Base64.getEncoder().encodeToString(data);
     }
 }

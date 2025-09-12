@@ -16,8 +16,17 @@
 
 package io.helidon.extensions.mcp.server;
 
-/**
- * Image content.
- */
-sealed interface McpImageContent extends McpMediaContent permits McpImageContentImpl {
+import io.helidon.common.media.type.MediaType;
+
+final class McpToolAudioContent implements McpToolContent {
+    private final McpAudioContent audio;
+
+    McpToolAudioContent(byte[] data, MediaType mediaType) {
+        this.audio = new McpAudioContentImpl(data, mediaType);
+    }
+
+    @Override
+    public McpContent content() {
+        return audio;
+    }
 }

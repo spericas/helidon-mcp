@@ -17,8 +17,6 @@
 package io.helidon.extensions.mcp.server;
 
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -315,6 +313,9 @@ final class McpJsonRpc {
         if (content instanceof McpPromptResourceContent resource) {
             return McpJsonRpc.toJson(resource);
         }
+        if (content instanceof McpPromptAudioContent resource) {
+            return McpJsonRpc.toJson(resource);
+        }
         return null;
     }
 
@@ -327,6 +328,9 @@ final class McpJsonRpc {
         }
         if (content instanceof McpResourceContent resource) {
             return toJson(resource);
+        }
+        if (content instanceof McpAudioContent audio) {
+            return toJson(audio);
         }
         return null;
     }
@@ -362,6 +366,12 @@ final class McpJsonRpc {
                 .add("content", toJson(content.content()));
     }
 
+    static JsonObjectBuilder toJson(McpPromptAudioContent audio) {
+        return JSON_BUILDER_FACTORY.createObjectBuilder()
+                .add("role", audio.role().text())
+                .add("content", McpJsonRpc.toJson(audio.content()));
+    }
+
     static JsonObjectBuilder toJson(McpTextContent content) {
         return JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("type", content.type().text())
@@ -371,20 +381,27 @@ final class McpJsonRpc {
     static JsonObjectBuilder toJson(McpImageContent content) {
         return JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("type", content.type().text())
-                .add("data", new String(content.data(), StandardCharsets.UTF_8))
+                .add("data", content.base64Data())
+                .add("mimeType", content.mediaType().text());
+    }
+
+    static JsonObjectBuilder toJson(McpAudioContent content) {
+        return JSON_BUILDER_FACTORY.createObjectBuilder()
+                .add("type", content.type().text())
+                .add("data", content.base64Data())
                 .add("mimeType", content.mediaType().text());
     }
 
     static JsonObjectBuilder toJson(McpResourceBinaryContent content) {
         return JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("mimeType", content.mimeType().text())
-                .add("blob", Base64.getEncoder().encodeToString(content.data()));
+                .add("blob", content.base64Data());
     }
 
     static JsonObjectBuilder toJson(McpResourceTextContent content) {
         return JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("mimeType", content.mimeType().text())
-                .add("text", new String(content.data(), StandardCharsets.UTF_8));
+                .add("text", content.text());
     }
 
     static JsonObject toJson(McpProgress progress, int newProgress) {

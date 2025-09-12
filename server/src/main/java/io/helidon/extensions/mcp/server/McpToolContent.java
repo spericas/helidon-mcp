@@ -19,7 +19,10 @@ package io.helidon.extensions.mcp.server;
 /**
  * Tool contents that can returned as part of the tool execution.
  */
-public sealed interface McpToolContent permits McpToolTextContent, McpToolImageContent, McpToolResourceContent {
+public sealed interface McpToolContent permits McpToolTextContent,
+                                               McpToolImageContent,
+                                               McpToolResourceContent,
+                                               McpToolAudioContent {
     /**
      * Get the content of this {@code ToolContent}.
      *
