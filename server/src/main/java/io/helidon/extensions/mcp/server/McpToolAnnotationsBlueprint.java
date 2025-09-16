@@ -25,11 +25,6 @@ import io.helidon.builder.api.Prototype;
 interface McpToolAnnotationsBlueprint {
 
     /**
-     * Default annotations on an MCP tool.
-     */
-    McpToolAnnotations DEFAULT_ANNOTATIONS = McpToolAnnotations.create();
-
-    /**
      * Annotation title for the tool.
      *
      * @return the title

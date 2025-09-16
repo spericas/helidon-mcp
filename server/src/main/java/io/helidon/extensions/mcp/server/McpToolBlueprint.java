@@ -58,7 +58,7 @@ interface McpToolBlueprint {
      * @return set of annotations
      */
     default McpToolAnnotations annotations() {
-        return McpToolAnnotations.DEFAULT_ANNOTATIONS;
+        return McpToolAnnotations.create();
     }
 
     /**

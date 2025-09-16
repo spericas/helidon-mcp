@@ -30,7 +30,7 @@ class McpToolsServer {
     public static final String TOOL_CONTENT = "Tool Content";
     public static final String TOOL_DESCRIPTION = "Tool description";
 
-    @Mcp.Tool(value = TOOL_DESCRIPTION, title = "tool", readOnlyHint = true)
+    @Mcp.Tool(TOOL_DESCRIPTION)
     String tool(String value, Foo foo) {
         return """
                 value=%s
