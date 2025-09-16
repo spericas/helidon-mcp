@@ -16,8 +16,6 @@
 
 package io.helidon.extensions.mcp.tests;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import io.helidon.webserver.http.HttpRouting;
@@ -26,26 +24,23 @@ import io.helidon.webserver.testing.junit5.SetUpRoute;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 
-abstract class AbstractMcpSdkProgressTest extends AbstractMcpSdkTest {
+abstract class AbstractMcpSdkProtocolVersionTest extends AbstractMcpSdkTest {
 
-    private final List<McpSchema.ProgressNotification> messages = new ArrayList<>();
+    private String protocolVersion;
 
     @SetUpRoute
     static void routing(HttpRouting.Builder builder) {
-        ProgressNotifications.setUpRoute(builder);
+        ProtocolVersion.setUpRoute(builder);
     }
 
     @Test
-    void testMcpSdkProgress() {
-        McpSchema.CallToolRequest request = McpSchema.CallToolRequest.builder()
-                .name("progress")
-                .arguments(Map.of())
-                .progressToken("atoken")
-                .build();
-        client().callTool(request);
+    void testMcpProtocolVersion() {
+        McpSchema.CallToolResult result = client().callTool(
+                new McpSchema.CallToolRequest("protocolVersion", Map.of()));
+        protocolVersion = ((McpSchema.TextContent) result.content().getFirst()).text();
     }
 
-    protected List<McpSchema.ProgressNotification> messages() {
-        return messages;
+    protected String protocolVersion() {
+        return protocolVersion;
     }
 }

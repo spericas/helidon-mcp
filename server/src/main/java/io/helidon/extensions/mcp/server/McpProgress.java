@@ -16,13 +16,20 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.helidon.http.sse.SseEvent;
 import io.helidon.webserver.sse.SseSink;
+
+import static io.helidon.extensions.mcp.server.McpJsonRpc.toJson;
 
 /**
  * Progress notification to the client.
  */
 public final class McpProgress extends McpFeature {
+    private static final Logger LOGGER = Logger.getLogger(McpProgress.class.getName());
 
     private int total;
     private int tokenInt;
@@ -54,17 +61,39 @@ public final class McpProgress extends McpFeature {
      * @param progress progress
      */
     public void send(int progress) {
+        sendProgress(progress, null);
+    }
+
+    /**
+     * Send a progress notification with a message to the client. Ignores the message
+     * if using an older specification that does support it.
+     *
+     * @param progress the progress
+     * @param message the notification
+     */
+    public void send(int progress, String message) {
+        Objects.requireNonNull(message, "message is null");
+        String protocolVersion = session().protocolVersion();
+        if (protocolVersion.startsWith("2024")) {
+            LOGGER.log(Level.FINE, () -> "Ignoring message with protocol version " + protocolVersion);
+            sendProgress(progress, null);
+        } else {
+            sendProgress(progress, message);
+        }
+    }
+
+    void sendProgress(int progress, String message) {
         if (progress > total) {
             return;
         }
         if (isSending) {
             if (sseSink().isPresent()) {
                 sseSink().get().emit(SseEvent.builder()
-                                     .name("message")
-                                     .data(McpJsonRpc.toJson(this, progress))
-                                     .build());
+                                             .name("message")
+                                             .data(toJson(this, progress, message))
+                                             .build());
             } else {
-                session().send(McpJsonRpc.toJson(this, progress));
+                session().send(toJson(this, progress, message));
             }
         }
         if (progress >= total) {

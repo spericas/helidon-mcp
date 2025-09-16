@@ -21,23 +21,18 @@ import io.helidon.webserver.testing.junit5.ServerTest;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.AfterEach;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
 
 @ServerTest
-class McpSdkSseProgressTest extends AbstractMcpSdkProgressTest {
+class McpSdkStreamableProtocolVersionTest extends AbstractMcpSdkProtocolVersionTest {
 
     private final McpSyncClient client;
 
-    McpSdkSseProgressTest(WebServer server) {
-        client = McpClient.sync(sse(server.port()))
-                .capabilities(McpSchema.ClientCapabilities.builder().build())
-                .progressConsumer(n -> messages().add(n))        // collect all notifications
-                .build();
+    McpSdkStreamableProtocolVersionTest(WebServer server) {
+        this.client = McpClient.sync(streamable(server.port())).build();
         client.initialize();
     }
 
@@ -47,11 +42,7 @@ class McpSdkSseProgressTest extends AbstractMcpSdkProgressTest {
     }
 
     @AfterEach
-    void tearDown() {
-        assertThat(messages().size(), is(10));
-        messages().forEach(n -> {
-            assertThat(n.progressToken(), is("atoken"));
-            assertThat(n.message(), isEmptyOrNullString());
-        });
+    void verify() {
+        assertThat(protocolVersion(), is("2025-03-26"));
     }
 }
