@@ -162,7 +162,7 @@ final class McpJsonRpc {
                 .build();
     }
 
-    static JsonObjectBuilder toJson(McpTool tool) {
+    static JsonObjectBuilder toJson(McpTool tool, String protocolVersion) {
         JsonObject jsonSchema = CACHE.computeIfAbsent(tool.schema(), schema -> {
             if (schema.isEmpty()) {
                 return EMPTY_OBJECT_SCHEMA;
@@ -171,10 +171,27 @@ final class McpJsonRpc {
                 return r.readObject();      // in-memory parsing
             }
         });
-        return JSON_BUILDER_FACTORY.createObjectBuilder()
+
+        // serialize tool
+        JsonObjectBuilder builder = JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("name", tool.name())
                 .add("description", tool.description())
                 .add("inputSchema", jsonSchema);
+
+        // serialize tool annotations starting 2025
+        if (!protocolVersion.startsWith("2024")) {
+            McpToolAnnotations annotations = tool.annotations();
+            if (annotations != null) {
+                JsonObjectBuilder annotBuilder = JSON_BUILDER_FACTORY.createObjectBuilder();
+                annotBuilder.add("title", annotations.title());
+                annotBuilder.add("destructiveHint", annotations.destructiveHint());
+                annotBuilder.add("idempotentHint", annotations.idempotentHint());
+                annotBuilder.add("openWorldHint", annotations.openWorldHint());
+                annotBuilder.add("readOnlyHint", annotations.readOnlyHint());
+                builder.add("annotations", annotBuilder.build());
+            }
+        }
+        return builder;
     }
 
     static JsonObject toolCall(List<McpToolContent> contents) {
@@ -202,10 +219,10 @@ final class McpJsonRpc {
         return resources.build();
     }
 
-    static JsonObject listTools(McpPage<McpTool> page) {
+    static JsonObject listTools(McpPage<McpTool> page, String protocolVersion) {
         JsonArrayBuilder builder = JSON_BUILDER_FACTORY.createArrayBuilder();
         page.components().stream()
-                .map(McpJsonRpc::toJson)
+                .map(t -> McpJsonRpc.toJson(t, protocolVersion))
                 .forEach(builder::add);
         JsonObjectBuilder resources = JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("tools", builder);

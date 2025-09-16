@@ -40,6 +40,7 @@ final class McpTypes {
     static final TypeName MCP_RESOURCES_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourcesPageSize");
     static final TypeName MCP_RESOURCE_TEMPLATES_PAGE_SIZE =
             TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceTemplatesPageSize");
+
     //Implementations
     static final TypeName MCP_LOGGER = TypeName.create("io.helidon.extensions.mcp.server.McpLogger");
     static final TypeName MCP_ROLE_ENUM = TypeName.create("io.helidon.extensions.mcp.server.McpRole");
@@ -55,6 +56,7 @@ final class McpTypes {
     static final TypeName MCP_PROMPT_CONTENTS = TypeName.create("io.helidon.extensions.mcp.server.McpPromptContents");
     static final TypeName MCP_PROMPT_ARGUMENT = TypeName.create("io.helidon.extensions.mcp.server.McpPromptArgument");
     static final TypeName MCP_COMPLETION_INTERFACE = TypeName.create("io.helidon.extensions.mcp.server.McpCompletion");
+    static final TypeName MCP_TOOL_ANNOTATIONS = TypeName.create("io.helidon.extensions.mcp.server.McpToolAnnotations");
     static final TypeName MCP_RESOURCE_CONTENTS = TypeName.create("io.helidon.extensions.mcp.server.McpResourceContents");
     static final TypeName MCP_COMPLETION_CONTENTS = TypeName.create("io.helidon.extensions.mcp.server.McpCompletionContents");
     //others

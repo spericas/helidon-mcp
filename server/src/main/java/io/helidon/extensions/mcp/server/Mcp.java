@@ -143,6 +143,48 @@ public final class Mcp {
          * @return tool name
          */
         String value();
+
+        /**
+         * Annotation title for the tool.
+         *
+         * @return the title
+         */
+        String title() default "";
+
+        /**
+         * If true, the tool does not modify its environment.
+         *
+         * @return the hint
+         */
+        boolean readOnlyHint() default false;
+
+        /**
+         * If true, the tool may perform destructive updates to its environment.
+         * If false, the tool performs only additive updates. This property is
+         * meaningful only when {@link #readOnlyHint()} is false.
+         *
+         * @return the hint
+         */
+        boolean destructiveHint() default true;
+
+        /**
+         * If true, calling the tool repeatedly with the same arguments
+         * will have no additional effect on its environment. This property
+         * is meaningful only when {@link #readOnlyHint()} is false.
+         *
+         * @return the hint
+         */
+        boolean idempotentHint() default false;
+
+        /**
+         * If true, this tool may interact with an  open world of external
+         * entities. If false, the tool's domain of interaction is closed.
+         * For example, the world of a web search tool is open, whereas that
+         * of a memory tool is not.
+         *
+         * @return the hint
+         */
+        boolean openWorldHint() default true;
     }
 
     /**
