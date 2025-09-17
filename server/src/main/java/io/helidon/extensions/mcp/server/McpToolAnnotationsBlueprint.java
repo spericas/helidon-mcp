@@ -19,7 +19,7 @@ import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 
 /**
- * An MCP tool annotation.
+ * MCP tool annotations.
  */
 @Prototype.Blueprint
 interface McpToolAnnotationsBlueprint {
