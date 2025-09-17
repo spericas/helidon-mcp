@@ -53,6 +53,15 @@ interface McpToolBlueprint {
     String schema();
 
     /**
+     * Annotations for this tool.
+     *
+     * @return set of annotations
+     */
+    default McpToolAnnotations annotations() {
+        return McpToolAnnotations.create();
+    }
+
+    /**
      * Tool execution function.
      *
      * @return function

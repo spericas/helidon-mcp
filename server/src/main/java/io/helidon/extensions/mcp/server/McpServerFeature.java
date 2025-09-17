@@ -403,7 +403,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             sendResponse(req, res, session);
             return;
         }
-        res.result(listTools(page));
+        res.result(listTools(page, session.protocolVersion()));
         sendResponse(req, res, session);
     }
 

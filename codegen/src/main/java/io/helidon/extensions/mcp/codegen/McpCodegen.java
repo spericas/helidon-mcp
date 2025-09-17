@@ -633,7 +633,8 @@ final class McpCodegen implements CodegenExtension {
 
         for (TypedElementInfo element : elements) {
             TypeName innerTypeName = createClassName(generatedType, element, "__Tool");
-            String description = element.annotation(MCP_TOOL).value().orElse("No description available.");
+            Annotation toolAnnotation = element.annotation(MCP_TOOL);
+            String description = toolAnnotation.value().orElse("No description available.");
             components.get(McpKind.TOOL).add(innerTypeName);
 
             classModel.addInnerClass(clazz -> clazz
@@ -643,7 +644,8 @@ final class McpCodegen implements CodegenExtension {
                     .addMethod(method -> addToolNameMethod(method, element))
                     .addMethod(method -> addToolDescriptionMethod(method, description))
                     .addMethod(method -> addToolSchemaMethod(method, element))
-                    .addMethod(method -> addToolMethod(method, classModel, element)));
+                    .addMethod(method -> addToolMethod(method, classModel, element))
+                    .addMethod(method -> addToolAnnotationsMethod(method, toolAnnotation)));
         }
     }
 
@@ -823,6 +825,31 @@ final class McpCodegen implements CodegenExtension {
                 .addAnnotation(Annotations.OVERRIDE)
                 .returnType(TypeNames.STRING)
                 .addContentLine("return \"" + description + "\";");
+    }
+
+    private void addToolAnnotationsMethod(Method.Builder builder, Annotation toolAnnotation) {
+        builder.name("annotations")
+                .addAnnotation(Annotations.OVERRIDE)
+                .returnType(McpTypes.MCP_TOOL_ANNOTATIONS)
+                .addContentLine("var builder = McpToolAnnotations.builder();")
+                .addContent("builder.title(\"")
+                .addContent(toolAnnotation.stringValue("title").orElse(""))
+                .addContentLine("\")")
+                .increaseContentPadding()
+                .addContent(".readOnlyHint(")
+                .addContent(toolAnnotation.booleanValue("readOnlyHint").orElse(false).toString())
+                .addContentLine(")")
+                .addContent(".destructiveHint(")
+                .addContent(toolAnnotation.booleanValue("destructiveHint").orElse(true).toString())
+                .addContentLine(")")
+                .addContent(".idempotentHint(")
+                .addContent(toolAnnotation.booleanValue("idempotentHint").orElse(false).toString())
+                .addContentLine(")")
+                .addContent(".openWorldHint(")
+                .addContent(toolAnnotation.booleanValue("openWorldHint").orElse(true).toString())
+                .addContentLine(");")
+                .decreaseContentPadding()
+                .addContentLine("return builder.build();");
     }
 
     private boolean isBoolean(TypeName type) {
