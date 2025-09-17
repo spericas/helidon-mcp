@@ -28,11 +28,11 @@ This section walks you through creating and configuring various MCP components.
 ### MCP Server
 
 Servers provide the fundamental building blocks for adding context to language models via MCP. It is accessible through a 
-configurable `HTTP` endpoint. The server manages client connections and provides features described in the following sections. 
+configurable HTTP endpoint. The server manages client connections and provides features described in the following sections. 
 The MCP server is implemented as a Helidon `HttpFeature` and registered with the web server's routing. To host multiple servers, 
 simply register additional `McpServerFeature` instances with unique paths. Each path acts as a unique entry point for MCP clients. 
 Use the`McpServerFeature` builder to register MCP components. The server's name and version are shared with clients during 
-connection, but Helidon imposes no constraints on how you manage them.
+connection initialization, but Helidon imposes no constraints on how you manage them.
 
 **Example: Creating an MCP server**
 
@@ -52,10 +52,10 @@ class McpServer {
 
 ### Tool
 
-`Tools` enable models to interact with external systems, such as querying databases, calling APIs, or performing computations. To 
-define a tool, specify its name, description, input schema, and business logic. Use the `addTool` method from the `McpServerFeature` 
-builder to register it with the server. The name and description help LLMs understand its purpose. The schema, written according to
-[JSON Schema Specification](https://json-schema.org/specification), defines the expected input format. The business logic is 
+`Tools` enable models to interact with external systems: for example, by querying databases, calling APIs, or performing 
+computations. To define a tool, provide a name, description, input schema, and business logic. Use the `addTool` method 
+from the `McpServerFeature` builder to register it with the server. The name and description help LLMs understand its purpose. 
+The schema, written according to [JSON Schema Specification](https://json-schema.org/specification), defines the expected input format. The business logic is 
 implemented in the `process` method and uses `McpRequest` to access inputs.
 
 #### Interface
@@ -113,7 +113,7 @@ class McpServer {
                     .addTool(tool -> tool.name("name")
                         .description("description")
                         .schema("schema")
-                        .tool(request -> McpToolContents.imageContent("base64", MediaTypes.create("image/png")))
+                        .tool(request -> McpToolContents.textContent("text"))
                         .build())));
     }
 }
@@ -121,10 +121,11 @@ class McpServer {
 
 #### Tool Content Types
 
-Helidon supports three types of tool content:
+Helidon supports four types of tool content:
 
 - **Text**: Text content with the default `text/plain` media type.
 - **Image**: Image content with a custom media type.
+- **Audio**: Audio content with a custom media type.
 - **Resource**: A reference to an `McpResource` via a URI (must be registered on the server).
 
 Use the `McpToolContents` factory to create tool contents:
@@ -132,7 +133,8 @@ Use the `McpToolContents` factory to create tool contents:
 ```java
 McpToolContent text = McpToolContents.textContent("text");
 McpToolContent resource = McpToolContents.resourceContent("http://path");
-McpToolContent image = McpToolContents.imageContent("base64", MediaTypes.create("image/png"));
+McpToolContent image = McpToolContents.imageContent(pngImageBytes(), MediaTypes.create("image/png"));
+McpToolContent audio = McpToolContents.audioContent(wavAudioBytes(), MediaTypes.create("audio/wav"));
 ```
 
 #### JSON Schema
@@ -191,8 +193,8 @@ class McpServer {
                 McpServerFeature.builder()
                     .addPrompt(prompt -> prompt.name("name")
                         .description("description")
-                        .addArgument(argument -> argument.name("arg-name")
-                            .description("arg-description")
+                        .addArgument(argument -> argument.name("name")
+                            .description("Argument description")
                             .required(true))
                         .prompt(request -> McpPromptContents.textContent("text", Role.USER))
                         .build())));
@@ -202,18 +204,20 @@ class McpServer {
 
 #### Prompt Content Types
 
-Helidon supports three prompt content types:
+Helidon supports four prompt content types:
 
 - **Text**: Text content with a default `text/plain` media type.
 - **Image**: Image content with a custom media type.
+- **Audio**: Audio content with a custom media type.
 - **Resource**: URI references to `McpResource` instances.
 
-`Prompt` content can be created using `McpPromptContents` factory, and used as result of the `Prompt` execution.
+`Prompt` content can be created using `McpPromptContents` factory, and used as a result of the `Prompt` execution.
 
 ```java
 McpPromptContent text = McpPromptContents.textContent("text", Role.USER);
 McpPromptContent resource = McpPromptContents.resourceContent("http://resource", Role.USER);
-McpPromptContent image = McpPromptContents.imageContent("base64", MediaTypes.APPLICATION_OCTET_STREAM, Role.USER);
+McpPromptContent image = McpPromptContents.imageContent(pngImageBytes(), MediaTypes.create("image/png"), Role.USER);
+McpPromptContent audio = McpPromptContents.audioContent(wavAudioBytes(), MediaTypes.create("audio/wav"), Role.USER);
 ```
 
 ### Resources
@@ -355,7 +359,7 @@ Helidon supports two resource content types:
 
 ```java
 McpResourceContent text = McpResourceContents.textContent("text");
-McpResourceContent binary = McpResourceContents.binaryContent("{\"foo\":\"bar\"}", MediaTypes.APPLICATION_JSON);
+McpResourceContent binary = McpResourceContents.binaryContent(gzipBytes(), "application/gzip");
 ```
 
 ### Completion
