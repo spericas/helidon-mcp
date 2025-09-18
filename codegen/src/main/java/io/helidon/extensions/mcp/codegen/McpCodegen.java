@@ -37,6 +37,7 @@ import io.helidon.common.types.AccessModifier;
 import io.helidon.common.types.Annotation;
 import io.helidon.common.types.Annotations;
 import io.helidon.common.types.ElementKind;
+import io.helidon.common.types.EnumValue;
 import io.helidon.common.types.ResolvedType;
 import io.helidon.common.types.TypeInfo;
 import io.helidon.common.types.TypeName;
@@ -57,6 +58,7 @@ import static io.helidon.extensions.mcp.codegen.McpTypes.LIST_MCP_PROMPT_ARGUMEN
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION_CONTENTS;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION_INTERFACE;
+import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION_TYPE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_DESCRIPTION;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_FEATURES;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_LOGGER;
@@ -225,10 +227,13 @@ final class McpCodegen implements CodegenExtension {
             return;
         }
 
-        for (TypedElementInfo element : elements) {
+        classModel.addImport(MCP_COMPLETION_TYPE);
 
+        for (TypedElementInfo element : elements) {
             TypeName innerTypeName = createClassName(generatedType, element, "__Completion");
-            String reference = element.annotation(MCP_COMPLETION).value().orElse("");
+            Annotation mcpCompletion = element.annotation(MCP_COMPLETION);
+            String reference = mcpCompletion.value().orElse("");
+            EnumValue referenceType = (EnumValue) mcpCompletion.objectValue("type").orElse(null);
 
             components.get(McpKind.COMPLETION).add(innerTypeName);
             classModel.addInnerClass(clazz -> clazz
@@ -236,6 +241,7 @@ final class McpCodegen implements CodegenExtension {
                     .addInterface(MCP_COMPLETION_INTERFACE)
                     .accessModifier(AccessModifier.PRIVATE)
                     .addMethod(method -> addCompletionReferenceMethod(method, reference))
+                    .addMethod(method -> addCompletionReferenceTypeMethod(method, referenceType))
                     .addMethod(method -> addCompletionMethod(method, classModel, element)));
         }
     }
@@ -243,8 +249,16 @@ final class McpCodegen implements CodegenExtension {
     private void addCompletionReferenceMethod(Method.Builder builder, String reference) {
         builder.name("reference")
                 .addAnnotation(Annotations.OVERRIDE)
-                .returnType(TypeNames.STRING)
+                .returnType(TypeNames.STRING)       // TODO
                 .addContentLine("return \"" + reference + "\";");
+    }
+
+    private void addCompletionReferenceTypeMethod(Method.Builder builder, EnumValue referenceType) {
+        String enumValue = referenceType != null ? referenceType.name() : "PROMPT";
+        builder.name("referenceType")
+                .addAnnotation(Annotations.OVERRIDE)
+                .returnType(McpTypes.MCP_COMPLETION_TYPE)
+                .addContentLine("return McpCompletionType." + enumValue + ";");
     }
 
     private void addCompletionMethod(Method.Builder builder, ClassModel.Builder classModel, TypedElementInfo element) {
