@@ -249,7 +249,7 @@ final class McpCodegen implements CodegenExtension {
     private void addCompletionReferenceMethod(Method.Builder builder, String reference) {
         builder.name("reference")
                 .addAnnotation(Annotations.OVERRIDE)
-                .returnType(TypeNames.STRING)       // TODO
+                .returnType(TypeNames.STRING)
                 .addContentLine("return \"" + reference + "\";");
     }
 

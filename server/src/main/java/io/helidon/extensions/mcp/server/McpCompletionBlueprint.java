@@ -18,7 +18,6 @@ package io.helidon.extensions.mcp.server;
 
 import java.util.function.Function;
 
-import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 
 /**
@@ -39,7 +38,6 @@ interface McpCompletionBlueprint {
      *
      * @return reference type
      */
-    @Option.Default("ref/prompt")
     default McpCompletionType referenceType() {
         return McpCompletionType.PROMPT;
     }

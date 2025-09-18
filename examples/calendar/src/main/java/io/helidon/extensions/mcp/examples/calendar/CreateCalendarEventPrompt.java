@@ -33,10 +33,11 @@ import io.helidon.extensions.mcp.server.McpRole;
  * Prompt to create a new calendar event and add it to the calendar.
  */
 final class CreateCalendarEventPrompt implements McpPrompt {
+    static final String PROMPT_NAME = "create-event";
 
     @Override
     public String name() {
-        return "create-event";
+        return PROMPT_NAME;
     }
 
     @Override

@@ -15,33 +15,20 @@
  */
 package io.helidon.extensions.mcp.server;
 
-/**
- * MCP completion reference type.
- */
-public enum McpCompletionType {
+import org.junit.jupiter.api.Test;
 
-    /**
-     * A prompt completion type.
-     */
-    PROMPT("ref/prompt"),
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-    /**
-     * A resource completion type.
-     */
-    RESOURCE("ref/resource");
+class McpCompletionTest {
 
-    private final String type;
-
-    McpCompletionType(String type) {
-        this.type = type;
-    }
-
-    static McpCompletionType fromString(String type) {
-        for (McpCompletionType b : McpCompletionType.values()) {
-            if (b.type.equals(type)) {
-                return b;
-            }
-        }
-        throw new IllegalArgumentException("Invalid completion reference type " + type);
+    @Test
+    void testDefaultMcpCompletion() {
+        McpCompletion completion = McpCompletion.builder()
+                .reference("acompletion")
+                .completion(r -> McpCompletionContents.completion(""))
+                .build();
+        assertThat(completion.reference(), is("acompletion"));
+        assertThat(completion.referenceType(), is(McpCompletionType.PROMPT));       // default
     }
 }

@@ -54,7 +54,8 @@ public class Main {
                         .addTool(new AddCalendarEventTool(calendar))
                         .addResource(new CalendarEventResource(calendar))
                         .addPrompt(new CreateCalendarEventPrompt())
+                        .addCompletion(new CreateCalendarEventPromptCompletion())
                         .addResource(new CalendarEventResourceTemplate(calendar))
-                        .addCompletion(new ResourceCompletion(calendar)));
+                        .addCompletion(new CalendarEventResourceCompletion()));
     }
 }

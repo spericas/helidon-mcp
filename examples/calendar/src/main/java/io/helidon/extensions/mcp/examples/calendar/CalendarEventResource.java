@@ -27,7 +27,7 @@ import io.helidon.extensions.mcp.server.McpResourceContent;
 import io.helidon.extensions.mcp.server.McpResourceContents;
 
 /**
- * Resource that represent a calendar event registry.
+ * Resource that represents a calendar event registry.
  */
 final class CalendarEventResource implements McpResource {
     private final Calendar calendar;

@@ -22,22 +22,18 @@ import io.helidon.extensions.mcp.server.McpCompletion;
 import io.helidon.extensions.mcp.server.McpCompletionContent;
 import io.helidon.extensions.mcp.server.McpCompletionContents;
 import io.helidon.extensions.mcp.server.McpCompletionType;
-import io.helidon.extensions.mcp.server.McpException;
 import io.helidon.extensions.mcp.server.McpRequest;
 
-/**
- * Auto-completion for {@link CalendarEventResourceTemplate} path.
- */
-final class ResourceCompletion implements McpCompletion {
-    private final Calendar calendar;
+import static io.helidon.extensions.mcp.examples.calendar.Calendar.URI_TEMPLATE;
 
-    ResourceCompletion(Calendar calendar) {
-        this.calendar = calendar;
-    }
+/**
+ * Auto-completion for {@link CalendarEventResourceTemplate}.
+ */
+final class CalendarEventResourceCompletion implements McpCompletion {
 
     @Override
     public String reference() {
-        return calendar.uriTemplate();
+        return URI_TEMPLATE;
     }
 
     @Override
@@ -55,18 +51,10 @@ final class ResourceCompletion implements McpCompletion {
                 .get("name")
                 .asString()
                 .orElse(null);
-        String argumentValue = request.parameters()
-                .get("value")
-                .asString()
-                .orElse(null);
 
-        if (argumentName == null || argumentValue == null) {
-            return McpCompletionContents.completion();
-        }
-        if (argumentName.equals("path")) {
+        if ("name".equals(argumentName)) {
             return McpCompletionContents.completion("events");
         }
-
-        throw new McpException("Invalid argument: " + argumentName);
+        return McpCompletionContents.completion();
     }
 }
