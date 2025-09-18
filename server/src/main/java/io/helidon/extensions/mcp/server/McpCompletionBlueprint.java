@@ -28,33 +28,6 @@ import io.helidon.builder.api.Prototype;
 interface McpCompletionBlueprint {
 
     /**
-     * MCP completion reference type.
-     */
-    enum ReferenceType {
-        PROMPT("ref/prompt"),
-        RESOURCE("ref/resource");
-
-        final String type;
-
-        ReferenceType(String type) {
-            this.type = type;
-        }
-
-        String type() {
-            return type;
-        }
-
-        static ReferenceType fromString(String type) {
-            for (ReferenceType b : ReferenceType.values()) {
-                if (b.type.equals(type)) {
-                    return b;
-                }
-            }
-            throw new IllegalArgumentException("Invalid completion reference type " + type);
-        }
-    }
-
-    /**
      * Completion reference must be a {@link McpPromptArgument} name or a {@link McpResource} uri template.
      *
      * @return completion reference
@@ -67,8 +40,8 @@ interface McpCompletionBlueprint {
      * @return reference type
      */
     @Option.Default("ref/prompt")
-    default ReferenceType referenceType() {
-        return ReferenceType.PROMPT;
+    default McpCompletionType referenceType() {
+        return McpCompletionType.PROMPT;
     }
 
     /**

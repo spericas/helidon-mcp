@@ -19,11 +19,14 @@ package io.helidon.extensions.mcp.tests;
 import io.helidon.webserver.http.HttpRouting;
 import io.helidon.webserver.testing.junit5.SetUpRoute;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 
+import static io.helidon.jsonrpc.core.JsonRpcError.INVALID_PARAMS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 abstract class AbstractMcpSdkCompletionTest extends AbstractMcpSdkTest {
 
@@ -35,7 +38,7 @@ abstract class AbstractMcpSdkCompletionTest extends AbstractMcpSdkTest {
     @Test
     void testMcpSdkCompletion() {
         McpSchema.CompleteRequest request = new McpSchema.CompleteRequest(
-                new McpSchema.PromptReference("prompt"),
+                new McpSchema.PromptReference("helidon"),
                 new McpSchema.CompleteRequest.CompleteArgument("argument", "Hel"));
         McpSchema.CompleteResult.CompleteCompletion result = client().completeCompletion(request).completion();
         assertThat(result.total(), is(1));
@@ -49,14 +52,11 @@ abstract class AbstractMcpSdkCompletionTest extends AbstractMcpSdkTest {
     @Test
     void testMcpSdkMissingPrompt() {
         McpSchema.CompleteRequest request = new McpSchema.CompleteRequest(
-                new McpSchema.PromptReference("Unknown"),
+                new McpSchema.PromptReference("unknown"),
                 new McpSchema.CompleteRequest.CompleteArgument("foo", "bar"));
-        McpSchema.CompleteResult.CompleteCompletion result = client().completeCompletion(request).completion();
-        assertThat(result.total(), is(1));
-        assertThat(result.hasMore(), is(false));
-
-        var list = result.values();
-        assertThat(list.size(), is(1));
-        assertThat(list.getFirst(), is(""));
+        McpError error = assertThrows(McpError.class,
+                                      () -> client().completeCompletion(request).completion());
+        assertThat(error.getJsonRpcError().code(), is(INVALID_PARAMS));
+        assertThat(error.getJsonRpcError().message(), is("Invalid completion request"));
     }
 }

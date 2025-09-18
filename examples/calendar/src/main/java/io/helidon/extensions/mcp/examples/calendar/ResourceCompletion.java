@@ -21,6 +21,7 @@ import java.util.function.Function;
 import io.helidon.extensions.mcp.server.McpCompletion;
 import io.helidon.extensions.mcp.server.McpCompletionContent;
 import io.helidon.extensions.mcp.server.McpCompletionContents;
+import io.helidon.extensions.mcp.server.McpCompletionType;
 import io.helidon.extensions.mcp.server.McpException;
 import io.helidon.extensions.mcp.server.McpRequest;
 
@@ -37,6 +38,11 @@ final class ResourceCompletion implements McpCompletion {
     @Override
     public String reference() {
         return calendar.uriTemplate();
+    }
+
+    @Override
+    public McpCompletionType referenceType() {
+        return McpCompletionType.RESOURCE;
     }
 
     @Override
