@@ -166,8 +166,8 @@ class MyPrompt implements McpPrompt {
     }
 
     @Override
-    public Set<McpPromptArgument> arguments() {
-        return Set.of(McpPromptArgument.builder()
+    public List<McpPromptArgument> arguments() {
+        return List.of(McpPromptArgument.builder()
                                        .name("name")
                                        .description("Argument description")
                                        .required(true)

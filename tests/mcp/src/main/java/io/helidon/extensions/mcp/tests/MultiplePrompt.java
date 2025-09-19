@@ -18,7 +18,6 @@ package io.helidon.extensions.mcp.tests;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import io.helidon.extensions.mcp.server.McpParameters;
@@ -84,8 +83,8 @@ class MultiplePrompt {
         }
 
         @Override
-        public Set<McpPromptArgument> arguments() {
-            return Set.of(McpPromptArgument.builder()
+        public List<McpPromptArgument> arguments() {
+            return List.of(McpPromptArgument.builder()
                                   .name("argument1")
                                   .description("Argument 1")
                                   .required(true)

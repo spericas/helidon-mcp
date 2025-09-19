@@ -63,8 +63,8 @@ final class McpTypes {
     static final TypeName HELIDON_MEDIA_TYPE = TypeName.create("io.helidon.common.media.type.MediaType");
     static final TypeName HELIDON_MEDIA_TYPES = TypeName.create("io.helidon.common.media.type.MediaTypes");
     static final TypeName HTTP_ROUTING_BUILDER = TypeName.create("io.helidon.webserver.http.HttpRouting.Builder");
-    static final TypeName SET_MCP_PROMPT_ARGUMENT = TypeName.create(
-            "java.util.Set<io.helidon.extensions.mcp.server.McpPromptArgument>");
+    static final TypeName LIST_MCP_PROMPT_ARGUMENT = TypeName.create(
+            "java.util.List<io.helidon.extensions.mcp.server.McpPromptArgument>");
     static final TypeName FUNCTION_REQUEST_COMPLETION_CONTENT = TypeName.create(
             "java.util.function.Function<"
                     + "io.helidon.extensions.mcp.server.McpRequest, "
