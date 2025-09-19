@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.helidon.codegen.CodegenContext;
@@ -54,6 +53,7 @@ import static io.helidon.extensions.mcp.codegen.McpTypes.HELIDON_MEDIA_TYPE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.HELIDON_MEDIA_TYPES;
 import static io.helidon.extensions.mcp.codegen.McpTypes.HTTP_FEATURE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.HTTP_ROUTING_BUILDER;
+import static io.helidon.extensions.mcp.codegen.McpTypes.LIST_MCP_PROMPT_ARGUMENT;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION_CONTENTS;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_COMPLETION_INTERFACE;
@@ -84,7 +84,6 @@ import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_TOOLS_PAGE_SIZE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_TOOL_CONTENTS;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_TOOL_INTERFACE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_VERSION;
-import static io.helidon.extensions.mcp.codegen.McpTypes.SET_MCP_PROMPT_ARGUMENT;
 import static io.helidon.service.codegen.ServiceCodegenTypes.SERVICE_ANNOTATION_SINGLETON;
 
 final class McpCodegen implements CodegenExtension {
@@ -583,7 +582,7 @@ final class McpCodegen implements CodegenExtension {
 
         builder.name("arguments")
                 .addAnnotation(Annotations.OVERRIDE)
-                .returnType(SET_MCP_PROMPT_ARGUMENT);
+                .returnType(LIST_MCP_PROMPT_ARGUMENT);
 
         for (TypedElementInfo param : element.parameterArguments()) {
             if (MCP_FEATURES.equals(param.typeName())) {
@@ -619,7 +618,7 @@ final class McpCodegen implements CodegenExtension {
                     .addContentLine("\");");
         }
         builder.addContent("return ")
-                .addContent(Set.class)
+                .addContent(List.class)
                 .addContent(".of(")
                 .addContent(String.join(", ", promptArgs))
                 .addContent(");");

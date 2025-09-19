@@ -17,7 +17,6 @@
 package io.helidon.extensions.mcp.examples.calendar;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import io.helidon.extensions.mcp.server.McpException;
@@ -46,7 +45,7 @@ final class CreateCalendarEventPrompt implements McpPrompt {
     }
 
     @Override
-    public Set<McpPromptArgument> arguments() {
+    public List<McpPromptArgument> arguments() {
         McpPromptArgument name = McpPromptArgument.builder()
                 .name("name")
                 .description("Event name")
@@ -63,7 +62,7 @@ final class CreateCalendarEventPrompt implements McpPrompt {
                 .required(true)
                 .build();
 
-        return Set.of(name, date, attendees);
+        return List.of(name, date, attendees);
     }
 
     @Override

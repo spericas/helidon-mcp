@@ -17,7 +17,6 @@
 package io.helidon.extensions.mcp.server;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import io.helidon.builder.api.Option;
@@ -44,12 +43,12 @@ interface McpPromptBlueprint {
     String description();
 
     /**
-     * A {@link Set} of prompt argument.
+     * A {@link List} of prompt arguments.
      *
-     * @return {@link Set} of argument
+     * @return {@link List} of arguments
      */
     @Option.Singular
-    Set<McpPromptArgument> arguments();
+    List<McpPromptArgument> arguments();
 
     /**
      * Prompt template processing.

@@ -17,7 +17,6 @@
 package io.helidon.extensions.mcp.tests;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import io.helidon.common.media.type.MediaType;
@@ -99,8 +98,8 @@ class PaginationServer {
         }
 
         @Override
-        public Set<McpPromptArgument> arguments() {
-            return Set.of();
+        public List<McpPromptArgument> arguments() {
+            return List.of();
         }
 
         @Override

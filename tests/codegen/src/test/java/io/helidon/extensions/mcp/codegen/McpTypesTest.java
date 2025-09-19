@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -125,7 +126,7 @@ class McpTypesTest {
         checkField(toCheck, checked, fields, "HTTP_ROUTING_BUILDER", HttpRouting.Builder.class);
         checkField(toCheck, checked, fields, "MCP_TOOL_ANNOTATIONS", McpToolAnnotations.class);
 
-        checkField(toCheck, checked, fields, "SET_MCP_PROMPT_ARGUMENT", Set.class);
+        checkField(toCheck, checked, fields, "LIST_MCP_PROMPT_ARGUMENT", List.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_COMPLETION_CONTENT", Function.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_LIST_RESOURCE_CONTENT", Function.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_LIST_TOOL_CONTENT", Function.class);
