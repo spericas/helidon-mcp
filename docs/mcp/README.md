@@ -365,7 +365,8 @@ McpResourceContent binary = McpResourceContents.binaryContent(gzipBytes(), "appl
 ### Completion
 
 The `Completion` feature offers auto-suggestions for prompt arguments or resource template parameters, making the server easier 
-to use and explore. Each completion is bound to a prompt name or a URI template. Access arguments from `McpRequest`.
+to use and explore. Each completion is bound to a prompt name or a URI template. Access arguments from `McpRequest`. 
+The completion's type, either prompt or resource template, is returned by the `referenceType` method.
 
 #### Interface
 
@@ -376,6 +377,11 @@ class MyCompletion implements McpCompletion {
     @Override
     public String reference() {
         return "MyPrompt";
+    }
+
+    @Override
+    public McpCompletionType referenceType() {
+        return McpCompletionType.PROMPT;
     }
 
     @Override

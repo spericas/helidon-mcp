@@ -103,7 +103,8 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     private final McpPagination<McpResource> resources;
     private final McpPagination<McpResourceTemplate> resourceTemplates;
     private final Set<McpCapability> capabilities = new HashSet<>();
-    private final Map<String, McpCompletion> completions = new ConcurrentHashMap<>();
+    private final Map<String, McpCompletion> promptCompletions = new ConcurrentHashMap<>();
+    private final Map<String, McpCompletion> resourceCompletions = new ConcurrentHashMap<>();
     private final LruCache<String, McpSession> sessions = LruCache.create(SESSION_CACHE_SIZE);
 
     private McpServerFeature(McpServerConfig config) {
@@ -124,7 +125,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             }
         }
         for (McpCompletion completion : config.completions()) {
-            completions.put(completion.reference(), completion);
+            switch (completion.referenceType()) {
+            case PROMPT -> promptCompletions.put(completion.reference(), completion);
+            case RESOURCE -> resourceCompletions.put(completion.reference(), completion);
+            default -> throw new IllegalStateException("Unknown reference type: " + completion.referenceType());
+            }
         }
 
         this.tools = new McpPagination<>(tools, config.toolsPageSize());
@@ -623,24 +628,27 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         if (referenceType != null) {
             try {
                 McpCompletionType type = McpCompletionType.fromString(referenceType);
-                String reference = switch (type) {
-                    case PROMPT -> ref.get("name").asString().orElse(null);
-                    case RESOURCE -> ref.get("uri").asString().orElse(null);
-                };
-                if (reference != null) {
-                    McpCompletion completion = completions.get(reference);
-                    if (completion != null) {
-                        McpFeatures features = mcpFeatures(req, res, session);
-                        McpCompletionContent result = completion.completion()
-                                .apply(McpRequest.builder()
-                                               .parameters(parameters.get("argument"))
-                                               .features(features)
-                                               .protocolVersion(session.protocolVersion())
-                                               .build());
-                        res.result(toJson(result));
-                        sendResponse(req, res, session, features);
-                        return;
+                McpCompletion completion = switch (type) {
+                    case PROMPT -> {
+                        String name = ref.get("name").asString().orElse(null);
+                        yield name != null ? promptCompletions.get(name) : null;
                     }
+                    case RESOURCE -> {
+                        String uri = ref.get("uri").asString().orElse(null);
+                        yield uri != null ? resourceCompletions.get(uri) : null;
+                    }
+                };
+                if (completion != null) {
+                    McpFeatures features = mcpFeatures(req, res, session);
+                    McpCompletionContent result = completion.completion()
+                            .apply(McpRequest.builder()
+                                           .parameters(parameters.get("argument"))
+                                           .features(features)
+                                           .protocolVersion(session.protocolVersion())
+                                           .build());
+                    res.result(toJson(result));
+                    sendResponse(req, res, session, features);
+                    return;
                 }
             } catch (IllegalArgumentException e) {      // invalid reference type
                 // falls through
