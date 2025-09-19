@@ -34,6 +34,7 @@ final class McpJsonRpc {
     static final JsonReaderFactory JSON_READER_FACTORY = Json.createReaderFactory(Map.of());
 
     private static final Map<String, JsonObject> CACHE = new ConcurrentHashMap<>();
+    private static final JsonObject EMPTY_OBJECT = Json.createObjectBuilder().build();
     private static final JsonObject EMPTY_OBJECT_SCHEMA = JSON_BUILDER_FACTORY.createObjectBuilder()
             .add("type", "object")
             .add("properties", JsonObject.EMPTY_JSON_OBJECT)
@@ -147,14 +148,15 @@ final class McpJsonRpc {
         return JSON_BUILDER_FACTORY.createObjectBuilder()
                 .add("protocolVersion", protocolVersion)
                 .add("capabilities", JSON_BUILDER_FACTORY.createObjectBuilder()
-                        .add("logging", JSON_BUILDER_FACTORY.createObjectBuilder())
+                        .add("logging", EMPTY_OBJECT)
                         .add("prompts", JSON_BUILDER_FACTORY.createObjectBuilder()
                                 .add("listChanged", capabilities.contains(McpCapability.PROMPT_LIST_CHANGED)))
                         .add("tools", JSON_BUILDER_FACTORY.createObjectBuilder()
                                 .add("listChanged", capabilities.contains(McpCapability.TOOL_LIST_CHANGED)))
                         .add("resources", JSON_BUILDER_FACTORY.createObjectBuilder()
                                 .add("listChanged", capabilities.contains(McpCapability.RESOURCE_LIST_CHANGED))
-                                .add("subscribe", capabilities.contains(McpCapability.RESOURCE_SUBSCRIBE))))
+                                .add("subscribe", capabilities.contains(McpCapability.RESOURCE_SUBSCRIBE)))
+                        .add("completions", EMPTY_OBJECT))
                 .add("serverInfo", JSON_BUILDER_FACTORY.createObjectBuilder()
                         .add("name", config.name())
                         .add("version", config.version()))

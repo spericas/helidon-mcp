@@ -261,6 +261,14 @@ public final class Mcp {
          * @return uri or prompt name
          */
         String value();
+
+        /**
+         * The type of this completion. Defaults to
+         * {@link io.helidon.extensions.mcp.server.McpCompletionType#PROMPT}.
+         *
+         * @return completion type
+         */
+        McpCompletionType type() default McpCompletionType.PROMPT;
     }
 
     /**

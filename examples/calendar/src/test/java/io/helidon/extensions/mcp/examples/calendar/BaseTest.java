@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import static io.helidon.extensions.mcp.examples.calendar.Calendar.URI_TEMPLATE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
@@ -47,7 +48,7 @@ abstract class BaseTest {
     }
 
     abstract McpSyncClient client();
-    
+
     @Test
     @Order(1)
     void testToolList() {
@@ -67,7 +68,7 @@ abstract class BaseTest {
     @Test
     @Order(2)
     void testToolCall() {
-        Map<String, Object> arguments = Map.of("name", "Franck-birthday", "date", "2021-04-20", "attendees", List.of("Franck"));
+        Map<String, Object> arguments = Map.of("name", "Frank-birthday", "date", "2021-04-20", "attendees", List.of("Frank"));
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("add-calendar-event", arguments);
         McpSchema.CallToolResult result = client().callTool(request);
         assertThat(result.isError(), nullValue());
@@ -117,7 +118,7 @@ abstract class BaseTest {
     @Test
     @Order(4)
     void testPromptCall() {
-        Map<String, Object> arguments = Map.of("name", "Franck-birthday", "date", "2021-04-20", "attendees", "Franck");
+        Map<String, Object> arguments = Map.of("name", "Frank-birthday", "date", "2021-04-20", "attendees", "Frank");
         McpSchema.GetPromptRequest request = new McpSchema.GetPromptRequest("create-event", arguments);
         McpSchema.GetPromptResult promptResult = client().getPrompt(request);
         assertThat(promptResult.description(), is("Create a new event and add it to the calendar"));
@@ -131,9 +132,9 @@ abstract class BaseTest {
 
         McpSchema.TextContent textContent = (McpSchema.TextContent) message.content();
         assertThat(textContent.text(), is("""
-                                             Create a new calendar event with name Franck-birthday, at date 2021-04-20 and attendees Franck. Make
-                                             sure all attendees are free to attend the event.
-                                             """));
+                                                  Create a new calendar event with name Frank-birthday, at date 2021-04-20 and attendees Frank. Make
+                                                  sure all attendees are free to attend the event.
+                                                  """));
     }
 
     @Test
@@ -166,7 +167,7 @@ abstract class BaseTest {
         assertThat(content, instanceOf(McpSchema.TextResourceContents.class));
 
         McpSchema.TextResourceContents textContent = (McpSchema.TextResourceContents) content;
-        assertThat(textContent.text(), is("Event: { name: Franck-birthday, date: 2021-04-20, attendees: [Franck] }\n"));
+        assertThat(textContent.text(), is("Event: { name: Frank-birthday, date: 2021-04-20, attendees: [Frank] }\n"));
     }
 
     @Test
@@ -186,7 +187,7 @@ abstract class BaseTest {
     @Test
     @Order(8)
     void testResourceTemplateCall() {
-        McpSchema.ReadResourceRequest request = new McpSchema.ReadResourceRequest("file://events/Franck-birthday");
+        McpSchema.ReadResourceRequest request = new McpSchema.ReadResourceRequest("file://events/Frank-birthday");
         McpSchema.ReadResourceResult result = client().readResource(request);
         var contents = result.contents();
         assertThat(contents.size(), is(1));
@@ -195,9 +196,51 @@ abstract class BaseTest {
         assertThat(content, instanceOf(McpSchema.TextResourceContents.class));
 
         McpSchema.TextResourceContents text = (McpSchema.TextResourceContents) content;
-        assertThat(content.uri(), is("file://events/Franck-birthday"));
+        assertThat(content.uri(), is("file://events/Frank-birthday"));
         assertThat(content.mimeType(), is(MediaTypes.TEXT_PLAIN_VALUE));
-        assertThat(text.text(), is("Event: { name: Franck-birthday, date: 2021-04-20, attendees: [Franck] }"));
+        assertThat(text.text(), is("Event: { name: Frank-birthday, date: 2021-04-20, attendees: [Frank] }"));
+    }
+
+    @Test
+    @Order(9)
+    void testCalendarEventPromptCompletion() {
+        McpSchema.CompleteRequest request1 = new McpSchema.CompleteRequest(
+                new McpSchema.PromptReference("create-event"),
+                new McpSchema.CompleteRequest.CompleteArgument("name", ""));
+        McpSchema.CompleteResult.CompleteCompletion completion1 = client().completeCompletion(request1).completion();
+        assertThat(completion1.hasMore(), is(false));
+        assertThat(completion1.total(), is(1));
+        assertThat(completion1.values().size(), is(1));
+        assertThat(completion1.values().getFirst(), is("Frank & Friends"));
+
+        McpSchema.CompleteRequest request2 = new McpSchema.CompleteRequest(
+                new McpSchema.PromptReference("create-event"),
+                new McpSchema.CompleteRequest.CompleteArgument("date", ""));
+        McpSchema.CompleteResult.CompleteCompletion completion2 = client().completeCompletion(request2).completion();
+        assertThat(completion2.hasMore(), is(false));
+        assertThat(completion2.total(), is(3));
+        assertThat(completion2.values().size(), is(3));
+
+        McpSchema.CompleteRequest request3 = new McpSchema.CompleteRequest(
+                new McpSchema.PromptReference("create-event"),
+                new McpSchema.CompleteRequest.CompleteArgument("attendees", ""));
+        McpSchema.CompleteResult.CompleteCompletion completion3 = client().completeCompletion(request3).completion();
+        assertThat(completion3.hasMore(), is(false));
+        assertThat(completion3.total(), is(3));
+        assertThat(completion3.values().size(), is(3));
+    }
+
+    @Test
+    @Order(10)
+    void testCalendarEventResourceCompletion() {
+        McpSchema.CompleteRequest request = new McpSchema.CompleteRequest(
+                new McpSchema.ResourceReference(URI_TEMPLATE),
+                new McpSchema.CompleteRequest.CompleteArgument("name", ""));
+        McpSchema.CompleteResult.CompleteCompletion completion = client().completeCompletion(request).completion();
+        assertThat(completion.hasMore(), is(false));
+        assertThat(completion.total(), is(1));
+        assertThat(completion.values().size(), is(1));
+        assertThat(completion.values().getFirst(), is("events"));
     }
 
     private int sortArguments(McpSchema.PromptArgument first, McpSchema.PromptArgument second) {

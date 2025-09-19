@@ -31,6 +31,7 @@ import io.helidon.common.types.TypeName;
 import io.helidon.extensions.mcp.server.Mcp;
 import io.helidon.extensions.mcp.server.McpCompletion;
 import io.helidon.extensions.mcp.server.McpCompletionContents;
+import io.helidon.extensions.mcp.server.McpCompletionType;
 import io.helidon.extensions.mcp.server.McpFeatures;
 import io.helidon.extensions.mcp.server.McpLogger;
 import io.helidon.extensions.mcp.server.McpParameters;
@@ -119,6 +120,7 @@ class McpTypesTest {
         checkField(toCheck, checked, fields, "MCP_PROMPT_ARGUMENT", McpPromptArgument.class);
         checkField(toCheck, checked, fields, "MCP_COMPLETION_INTERFACE", McpCompletion.class);
         checkField(toCheck, checked, fields, "MCP_RESOURCE_CONTENTS", McpResourceContents.class);
+        checkField(toCheck, checked, fields, "MCP_COMPLETION_TYPE", McpCompletionType.class);
         checkField(toCheck, checked, fields, "MCP_COMPLETION_CONTENTS", McpCompletionContents.class);
         checkField(toCheck, checked, fields, "HTTP_FEATURE", HttpFeature.class);
         checkField(toCheck, checked, fields, "HELIDON_MEDIA_TYPE", MediaType.class);

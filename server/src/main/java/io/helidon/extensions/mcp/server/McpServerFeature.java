@@ -86,7 +86,7 @@ import static io.helidon.jsonrpc.core.JsonRpcError.INVALID_PARAMS;
 import static io.helidon.jsonrpc.core.JsonRpcError.INVALID_REQUEST;
 
 /**
- * Mcp http feature is the actual MCP server as a Helidon {@link HttpFeature}.
+ * Mcp http feature is the actual MCP server as a Helidon {@link io.helidon.webserver.http.HttpFeature}.
  */
 @RuntimeType.PrototypedBy(McpServerConfig.class)
 public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpServerConfig> {
@@ -103,7 +103,8 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     private final McpPagination<McpResource> resources;
     private final McpPagination<McpResourceTemplate> resourceTemplates;
     private final Set<McpCapability> capabilities = new HashSet<>();
-    private final Map<String, McpCompletion> completions = new ConcurrentHashMap<>();
+    private final Map<String, McpCompletion> promptCompletions = new ConcurrentHashMap<>();
+    private final Map<String, McpCompletion> resourceCompletions = new ConcurrentHashMap<>();
     private final LruCache<String, McpSession> sessions = LruCache.create(SESSION_CACHE_SIZE);
 
     private McpServerFeature(McpServerConfig config) {
@@ -124,7 +125,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             }
         }
         for (McpCompletion completion : config.completions()) {
-            completions.put(completion.reference(), completion);
+            switch (completion.referenceType()) {
+            case PROMPT -> promptCompletions.put(completion.reference(), completion);
+            case RESOURCE -> resourceCompletions.put(completion.reference(), completion);
+            default -> throw new IllegalStateException("Unknown reference type: " + completion.referenceType());
+            }
         }
 
         this.tools = new McpPagination<>(tools, config.toolsPageSize());
@@ -161,7 +166,6 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         builder.method(METHOD_LOGGING_SET_LEVEL, this::loggingLogLevelRpc);
 
         capabilities.add(McpCapability.COMPLETION);
-        completions.put(NoopCompletion.REFERENCE, new NoopCompletion());
         builder.method(METHOD_COMPLETION_COMPLETE, this::completionRpc);
 
         builder.method(METHOD_SESSION_DISCONNECT, this::disconnect);
@@ -481,7 +485,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                     .findFirst();
 
             if (templates.isEmpty()) {
-                res.error(JsonRpcError.INVALID_REQUEST, "Resource does not exist");
+                res.error(INVALID_REQUEST, "Resource does not exist");
                 sendResponse(req, res, session);
                 return;
             }
@@ -619,26 +623,41 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         }
         McpSession session = foundSession.get();
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
-        String reference = parseCompletionName(parameters.get("ref"));
-        if (reference == null) {
-            res.error(INVALID_REQUEST, "Completion name is missing from request");
-            sendResponse(req, res, session);
-            return;
+        McpParameters ref = parameters.get("ref");
+        String referenceType = ref.get("type").asString().orElse(null);
+        if (referenceType != null) {
+            try {
+                McpCompletionType type = McpCompletionType.fromString(referenceType);
+                McpCompletion completion = switch (type) {
+                    case PROMPT -> {
+                        String name = ref.get("name").asString().orElse(null);
+                        yield name != null ? promptCompletions.get(name) : null;
+                    }
+                    case RESOURCE -> {
+                        String uri = ref.get("uri").asString().orElse(null);
+                        yield uri != null ? resourceCompletions.get(uri) : null;
+                    }
+                };
+                if (completion != null) {
+                    McpFeatures features = mcpFeatures(req, res, session);
+                    McpCompletionContent result = completion.completion()
+                            .apply(McpRequest.builder()
+                                           .parameters(parameters.get("argument"))
+                                           .features(features)
+                                           .protocolVersion(session.protocolVersion())
+                                           .build());
+                    res.result(toJson(result));
+                    sendResponse(req, res, session, features);
+                    return;
+                }
+            } catch (IllegalArgumentException e) {      // invalid reference type
+                // falls through
+            }
         }
 
-        McpCompletion completion = completions.get(reference);
-        if (completion == null) {
-            completion = completions.get(NoopCompletion.REFERENCE);
-        }
-        McpFeatures features = mcpFeatures(req, res, session);
-        McpCompletionContent result = completion.completion()
-                .apply(McpRequest.builder()
-                               .parameters(parameters.get("argument"))
-                               .features(features)
-                               .protocolVersion(session.protocolVersion())
-                               .build());
-        res.result(toJson(result));
-        sendResponse(req, res, session, features);
+        // unable to process completion request
+        res.error(INVALID_PARAMS, "Invalid completion request");
+        sendResponse(req, res, session);
     }
 
     private String parseCompletionName(McpParameters completion) {
@@ -769,17 +788,4 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         return isStreamableHttp(req.headers()) ? new McpFeatures(session, res) : session.features();
     }
 
-    private static final class NoopCompletion implements McpCompletion {
-        private static final String REFERENCE = "noop-completion";
-
-        @Override
-        public String reference() {
-            return REFERENCE;
-        }
-
-        @Override
-        public Function<McpRequest, McpCompletionContent> completion() {
-            return request -> McpCompletionContents.completion("");
-        }
-    }
 }

@@ -31,6 +31,8 @@ import io.helidon.extensions.mcp.server.McpException;
  * The calendar is a temporary file containing a list of created events.
  */
 final class Calendar {
+    static final String URI_TEMPLATE = "file://events/{name}";
+
     private final Path file;
     private final String uri;
     private final String uriTemplate;
@@ -39,18 +41,18 @@ final class Calendar {
         try {
             this.file = Files.createTempFile("calendar", "-calendar");
             this.uri = file.toUri().toString();
-            this.uriTemplate = "file://events/{name}";
+            this.uriTemplate = URI_TEMPLATE;
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
 
     String uri() {
-        return this.uri;
+        return uri;
     }
 
     String uriTemplate() {
-        return this.uriTemplate;
+        return uriTemplate;
     }
 
     String readContent() {

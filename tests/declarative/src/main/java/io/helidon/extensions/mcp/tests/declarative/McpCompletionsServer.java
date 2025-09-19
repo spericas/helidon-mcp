@@ -21,6 +21,7 @@ import java.util.List;
 import io.helidon.extensions.mcp.server.Mcp;
 import io.helidon.extensions.mcp.server.McpCompletionContent;
 import io.helidon.extensions.mcp.server.McpCompletionContents;
+import io.helidon.extensions.mcp.server.McpCompletionType;
 import io.helidon.extensions.mcp.server.McpFeatures;
 import io.helidon.extensions.mcp.server.McpParameters;
 import io.helidon.extensions.mcp.server.McpRequest;
@@ -66,24 +67,24 @@ class McpCompletionsServer {
         return McpCompletionContents.completion(argument);
     }
 
-    @Mcp.Completion("resource/{path1}")
+    @Mcp.Completion(value = "resource/{path1}", type = McpCompletionType.RESOURCE)
     McpCompletionContent completionResource(McpParameters parameters) {
         String argument = parameters.get("value").asString().orElse(null);
         return McpCompletionContents.completion(argument);
     }
 
-    @Mcp.Completion("resource/{path2}")
+    @Mcp.Completion(value = "resource/{path2}", type = McpCompletionType.RESOURCE)
     McpCompletionContent completionResourceArgument(String path2) {
         return McpCompletionContents.completion(path2);
     }
 
-    @Mcp.Completion("resource/{path8}")
+    @Mcp.Completion(value = "resource/{path8}", type = McpCompletionType.RESOURCE)
     McpCompletionContent completionMcpRequest(McpRequest request) {
         String argument = request.parameters().get("value").asString().orElse(null);
         return McpCompletionContents.completion(argument);
     }
 
-    @Mcp.Completion("resource/{path10}")
+    @Mcp.Completion(value = "resource/{path10}", type = McpCompletionType.RESOURCE)
     McpCompletionContent completion1StringMcpRequest(String argument, McpRequest request) {
         return McpCompletionContents.completion(argument);
     }
@@ -126,40 +127,40 @@ class McpCompletionsServer {
         return List.of(argument);
     }
 
-    @Mcp.Completion("resource/{path3}")
+    @Mcp.Completion(value = "resource/{path3}", type = McpCompletionType.RESOURCE)
     List<String> completionResourceListArgument(String path3) {
         return List.of(path3);
     }
 
-    @Mcp.Completion("resource/{path4}")
+    @Mcp.Completion(value = "resource/{path4}", type = McpCompletionType.RESOURCE)
     List<String> completionResourceListArgumentFeatures(String path4, McpFeatures features) {
         return List.of(path4);
     }
 
-    @Mcp.Completion("resource/{path5}")
+    @Mcp.Completion(value = "resource/{path5}", type = McpCompletionType.RESOURCE)
     List<String> completionResourceListParametersFeatures(McpParameters parameters, McpFeatures features) {
         String argument = parameters.get("value").asString().orElse(null);
         return List.of(argument);
     }
 
-    @Mcp.Completion("resource/{path6}")
+    @Mcp.Completion(value = "resource/{path6}", type = McpCompletionType.RESOURCE)
     List<String> completionResourceListParameters(McpParameters parameters) {
         String argument = parameters.get("value").asString().orElse(null);
         return List.of(argument);
     }
 
-    @Mcp.Completion("resource/{path7}")
+    @Mcp.Completion(value = "resource/{path7}", type = McpCompletionType.RESOURCE)
     List<String> completionResourceListFeatures(McpFeatures features) {
         return List.of("path7");
     }
 
-    @Mcp.Completion("resource/{path9}")
+    @Mcp.Completion(value = "resource/{path9}", type = McpCompletionType.RESOURCE)
     List<String> completion1McpRequest(McpRequest request) {
         String argument = request.parameters().get("value").asString().orElse(null);
         return List.of(argument);
     }
 
-    @Mcp.Completion("resource/{path9}")
+    @Mcp.Completion(value = "resource/{path9}", type = McpCompletionType.RESOURCE)
     List<String> completionStringMcpRequest(String argument, McpRequest request) {
         return List.of(argument);
     }

@@ -289,7 +289,22 @@ to use and explore. Bind completions to prompts (by name) or resource templates 
 @Mcp.Server
 class Server {
 
-    @Mcp.Completion("http://path")
+    @Mcp.Completion("create")
+    McpCompletionContent completionPromptArgument(McpRequest request) {
+        String value = request.parameters().get("value").asString().orElse(null);
+        return McpCompletionContents.completion(value + ".");
+    }
+}
+```
+
+The default type of completion is prompt. When creating a completion for a resource template, use the 
+`type` property in the `McpCompletion` annotation as shown next:
+
+```java
+@Mcp.Server
+class Server {
+
+    @Mcp.Completion(value = "resource/{path1}", type = McpCompletionType.RESOURCE)
     McpCompletionContent completionPromptArgument(McpRequest request) {
         String value = request.parameters().get("value").asString().orElse(null);
         return McpCompletionContents.completion(value + ".");

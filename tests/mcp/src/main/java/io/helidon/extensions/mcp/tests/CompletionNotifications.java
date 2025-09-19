@@ -22,6 +22,7 @@ import java.util.function.Function;
 import io.helidon.extensions.mcp.server.McpCompletion;
 import io.helidon.extensions.mcp.server.McpCompletionContent;
 import io.helidon.extensions.mcp.server.McpCompletionContents;
+import io.helidon.extensions.mcp.server.McpCompletionType;
 import io.helidon.extensions.mcp.server.McpRequest;
 import io.helidon.extensions.mcp.server.McpServerFeature;
 import io.helidon.webserver.http.HttpRouting;
@@ -40,7 +41,12 @@ class CompletionNotifications {
 
         @Override
         public String reference() {
-            return "prompt";
+            return "helidon";
+        }
+
+        @Override
+        public McpCompletionType referenceType() {
+            return McpCompletionType.PROMPT;
         }
 
         @Override

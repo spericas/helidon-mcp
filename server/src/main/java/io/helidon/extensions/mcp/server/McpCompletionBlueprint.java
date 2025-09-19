@@ -34,6 +34,15 @@ interface McpCompletionBlueprint {
     String reference();
 
     /**
+     * The reference type of this completion.
+     *
+     * @return reference type
+     */
+    default McpCompletionType referenceType() {
+        return McpCompletionType.PROMPT;
+    }
+
+    /**
      * Complete the client argument accessible from parameters. The returned {@link McpCompletionContent}
      * can be instantiated using the {@link McpCompletionContents} factory.
      *
