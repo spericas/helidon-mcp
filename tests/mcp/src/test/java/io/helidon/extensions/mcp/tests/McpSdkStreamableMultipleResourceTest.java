@@ -16,24 +16,56 @@
 
 package io.helidon.extensions.mcp.tests;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import io.helidon.faulttolerance.Async;
 import io.helidon.webserver.WebServer;
+import io.helidon.webserver.http.HttpRouting;
 import io.helidon.webserver.testing.junit5.ServerTest;
+import io.helidon.webserver.testing.junit5.SetUpRoute;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.is;
+
+/**
+ * It's not clear that the client API supports resource update notifications, but it
+ * does execute a resource read every time a notification is received. This test
+ * verifies that 3 resource reads are executed based on 3 resource update notifications
+ * received by the server.
+ */
 @ServerTest
-class McpSdkStreamableMultipleResourceTest extends AbstractMcpSdkMultipleResourceTest {
+class McpSdkStreamableSubscriptionTest extends AbstractMcpSdkTest {
+    private static final CountDownLatch LATCH = new CountDownLatch(3);    // number of expected resources reads
 
     private final McpSyncClient client;
 
-    McpSdkStreamableMultipleResourceTest(WebServer server) {
+    McpSdkStreamableSubscriptionTest(WebServer server) {
         client = McpClient.sync(streamable(server.port())).build();
         client.initialize();
+    }
+
+    @SetUpRoute
+    static void routing(HttpRouting.Builder builder) {
+        MultipleResource.setUpRoute(builder, LATCH);
     }
 
     @Override
     McpSyncClient client() {
         return client;
+    }
+
+    @Test
+    void testSubscription() throws InterruptedException {
+        Async.create().invoke(() -> {
+            client().subscribeResource(new McpSchema.SubscribeRequest("http://myresource"));
+            return null;
+        });
+        assertThat(LATCH.await(10, TimeUnit.SECONDS), is(true));
     }
 }

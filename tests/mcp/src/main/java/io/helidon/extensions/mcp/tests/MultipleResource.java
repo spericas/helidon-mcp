@@ -18,6 +18,8 @@ package io.helidon.extensions.mcp.tests;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.helidon.common.media.type.MediaType;
@@ -26,6 +28,7 @@ import io.helidon.extensions.mcp.server.McpRequest;
 import io.helidon.extensions.mcp.server.McpResource;
 import io.helidon.extensions.mcp.server.McpResourceContent;
 import io.helidon.extensions.mcp.server.McpResourceContents;
+import io.helidon.extensions.mcp.server.McpResourceSubscriber;
 import io.helidon.extensions.mcp.server.McpServerFeature;
 import io.helidon.webserver.http.HttpRouting;
 
@@ -37,6 +40,11 @@ class MultipleResource {
     }
 
     static void setUpRoute(HttpRouting.Builder builder) {
+        setUpRoute(builder, null);
+    }
+
+    static void setUpRoute(HttpRouting.Builder builder, CountDownLatch latch) {
+        MyResource myResource = new MyResource(latch);
         builder.addFeature(McpServerFeature.builder()
                                    .path("/")
                                    .addResource(resource -> resource
@@ -55,24 +63,31 @@ class MultipleResource {
                                                    binaryContent("binary".getBytes(StandardCharsets.UTF_8),
                                                                  MediaTypes.APPLICATION_JSON))))
 
-                                   .addResource(new MyResource()));
+                                   .addResource(myResource)
+                                   .addResourceSubscriber(new MyResourceSubscriber(myResource)));
     }
 
     private static final class MyResource implements McpResource {
 
+        private final CountDownLatch latch;
+
+        MyResource(CountDownLatch latch) {
+            this.latch = latch;
+        }
+
         @Override
         public String uri() {
-            return "http://resource3";
+            return "http://myresource";
         }
 
         @Override
         public String name() {
-            return "resource3";
+            return "myresource";
         }
 
         @Override
         public String description() {
-            return "Resource 3";
+            return "My resource";
         }
 
         @Override
@@ -86,10 +101,40 @@ class MultipleResource {
         }
 
         List<McpResourceContent> read(McpRequest request) {
+            if (latch != null) {
+                latch.countDown();      // count number of reads
+            }
             return List.of(McpResourceContents.textContent("text"),
                            McpResourceContents.binaryContent("binary".getBytes(StandardCharsets.UTF_8),
                                                              MediaTypes.APPLICATION_JSON));
         }
     }
 
+    private static final class MyResourceSubscriber implements McpResourceSubscriber {
+
+        private final MyResource resource;
+
+        MyResourceSubscriber(MyResource resource) {
+            this.resource = resource;
+        }
+
+        @Override
+        public String uri() {
+            return resource.uri();
+        }
+
+        @Override
+        public Consumer<McpRequest> subscribe() {
+            return request -> {
+                try {
+                    for (int i = 0; i < 3; i++) {
+                        request.features().updateSubscription(resource.uri());
+                        Thread.sleep(100);      // simulate delay
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+    }
 }
