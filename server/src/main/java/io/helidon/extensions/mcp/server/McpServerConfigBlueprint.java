@@ -133,4 +133,20 @@ interface McpServerConfigBlueprint extends Prototype.Factory<McpServerFeature> {
      */
     @Option.Singular
     List<McpCompletion> completions();
+
+    /**
+     * List of resource subscribers.
+     *
+     * @return subscribers
+     */
+    @Option.Singular
+    List<McpResourceSubscriber> resourceSubscribers();
+
+    /**
+     * List of resource unsubscribers.
+     *
+     * @return unsubscribers
+     */
+    @Option.Singular
+    List<McpResourceUnsubscriber> resourceUnsubscribers();
 }

@@ -71,7 +71,6 @@ import static io.helidon.extensions.mcp.server.McpJsonRpc.METHOD_RESOURCES_UNSUB
 import static io.helidon.extensions.mcp.server.McpJsonRpc.METHOD_SESSION_DISCONNECT;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.METHOD_TOOLS_CALL;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.METHOD_TOOLS_LIST;
-import static io.helidon.extensions.mcp.server.McpJsonRpc.empty;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.isResponse;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.listPrompts;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.listResourceTemplates;
@@ -221,7 +220,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
      * @param headers the request headers
      * @return outcome of test
      */
-    private boolean isStreamableHttp(ServerRequestHeaders headers) {
+    static boolean isStreamableHttp(ServerRequestHeaders headers) {
         return headers.contains(SESSION_ID_HEADER);
     }
 
@@ -269,7 +268,6 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                                           .data(message)
                                                           .build()));
             } catch (McpException e) {
-                session.disconnect();
                 sessions.remove(sessionId);
             }
         }
@@ -457,6 +455,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                .parameters(parameters.get("arguments"))
                                .features(features)
                                .protocolVersion(session.protocolVersion())
+                               .context(session.context())
                                .build());
         features.progress().stopSending();
         res.result(toolCall(contents));
@@ -521,6 +520,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                .parameters(parameters)
                                .features(features)
                                .protocolVersion(session.protocolVersion())
+                               .context(session.context())
                                .build());
         features.progress().stopSending();
         res.result(readResource(resourceUri, contents));
@@ -528,9 +528,76 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     }
 
     private void resourceSubscribeRpc(JsonRpcRequest req, JsonRpcResponse res) {
+        Optional<McpSession> foundSession = findSession(req);
+        if (foundSession.isEmpty()) {
+            res.status(Status.NOT_FOUND_404).send();
+            return;
+        }
+        McpSession session = foundSession.get();
+        McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
+        String resourceUri = parameters.get("uri").asString().orElse(null);
+        Optional<McpResourceSubscriber> subscriber = config.resourceSubscribers().stream()
+                .filter(r -> resourceUri.equals(r.uri()))
+                .findFirst();
+        if (subscriber.isPresent()) {
+            // update session with new subscription
+            session.subscribe(req, res, subscriber.get());
+
+            // if SSE, then respond to request before calling method
+            if (!isStreamableHttp(req.headers())) {
+                res.status(Status.NO_CONTENT_204).send();
+            }
+
+            // invoke user method for a new subscription that may block thread
+            McpFeatures features = mcpFeatures(req, res, session);
+            subscriber.get()
+                    .subscribe()
+                    .accept(McpRequest.builder()
+                                   .parameters(parameters)
+                                   .features(features)
+                                   .protocolVersion(session.protocolVersion())
+                                    .context(session.context())
+                                    .build());
+        } else {
+            res.error(INVALID_PARAMS, "Unable to find resource subscriber");
+            sendResponse(req, res, session);
+        }
     }
 
     private void resourceUnsubscribeRpc(JsonRpcRequest req, JsonRpcResponse res) {
+        Optional<McpSession> foundSession = findSession(req);
+        if (foundSession.isEmpty()) {
+            res.status(Status.NOT_FOUND_404).send();
+            return;
+        }
+        McpSession session = foundSession.get();
+        McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
+        String resourceUri = parameters.get("uri").asString().orElse(null);
+        Optional<McpResourceUnsubscriber> unsubscriber = config.resourceUnsubscribers().stream()
+                .filter(r -> resourceUri.equals(r.uri()))
+                .findFirst();
+        if (unsubscriber.isPresent()) {
+            // invoke user method to unsubscribe
+            McpFeatures features = mcpFeatures(req, res, session);
+            unsubscriber.get()
+                    .unsubscribe()
+                    .accept(McpRequest.builder()
+                                   .parameters(parameters)
+                                   .features(features)
+                                   .protocolVersion(session.protocolVersion())
+                                    .context(session.context())
+                                    .build());
+
+            // update session and remove subscription
+            session.unsubscribe(req, unsubscriber.get());
+
+            // response to unsubscription request
+            res.status(Status.NO_CONTENT_204);
+            sendResponse(req, res, session);
+        } else {
+            res.error(INVALID_PARAMS, "Unable to find resource unsubscriber");
+            sendResponse(req, res, session);
+        }
     }
 
     private void resourceTemplateListRpc(JsonRpcRequest req, JsonRpcResponse res) {
@@ -602,6 +669,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                .parameters(parameters.get("arguments"))
                                .features(features)
                                .protocolVersion(session.protocolVersion())
+                               .context(session.context())
                                .build());
         features.progress().stopSending();
         res.result(toJson(contents, prompt.get().description()));
@@ -624,7 +692,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                 JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
                 McpFeatures features = mcpFeatures(req, res, session, requestId);
                 features.logger().setLevel(logLevel);
-                res.result(empty());
+                res.result(JsonValue.EMPTY_JSON_OBJECT);
                 sendResponse(req, res, session, features, requestId);
                 return;
 
@@ -666,6 +734,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                            .parameters(parameters.get("argument"))
                                            .features(features)
                                            .protocolVersion(session.protocolVersion())
+                                           .context(session.context())
                                            .build());
                     res.result(toJson(result));
                     sendResponse(req, res, session, features, requestId);
@@ -815,5 +884,4 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                 ? session.createFeatures(res, requestId)
                 : session.createFeatures(requestId);
     }
-
 }
