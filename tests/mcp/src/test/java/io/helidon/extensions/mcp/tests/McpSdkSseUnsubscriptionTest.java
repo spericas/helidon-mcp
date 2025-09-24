@@ -22,12 +22,12 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 
 @ServerTest
-class McpSdkStreamableUnsubscriptionTest extends AbstractMcpSdkUnsubscriptionTest {
+class McpSdkSseUnsubscriptionTest extends AbstractMcpSdkUnsubscriptionTest {
 
     private final McpSyncClient client;
 
-    McpSdkStreamableUnsubscriptionTest(WebServer server) {
-        client = McpClient.sync(streamable(server.port())).build();
+    McpSdkSseUnsubscriptionTest(WebServer server) {
+        client = McpClient.sync(sse(server.port())).build();
         client.initialize();
     }
 

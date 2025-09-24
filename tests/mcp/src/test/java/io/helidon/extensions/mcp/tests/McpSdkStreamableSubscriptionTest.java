@@ -15,27 +15,14 @@
  */
 package io.helidon.extensions.mcp.tests;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.helidon.webserver.WebServer;
-import io.helidon.webserver.http.HttpRouting;
 import io.helidon.webserver.testing.junit5.ServerTest;
-import io.helidon.webserver.testing.junit5.SetUpRoute;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import static io.helidon.extensions.mcp.tests.MultipleResource.context;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @ServerTest
-class McpSdkStreamableSubscriptionTest extends AbstractMcpSdkTest {
+class McpSdkStreamableSubscriptionTest extends AbstractMcpSdkSubscriptionTest {
 
     private final McpSyncClient client;
 
@@ -44,28 +31,9 @@ class McpSdkStreamableSubscriptionTest extends AbstractMcpSdkTest {
         client.initialize();
     }
 
-    @SetUpRoute
-    static void routing(HttpRouting.Builder builder) {
-        MultipleResource.setUpRoute(builder);
-    }
-
     @Override
     McpSyncClient client() {
         return client;
-    }
-
-    @BeforeEach
-    void setState() {
-        context().register(new MultipleResource.State(new CountDownLatch(3),
-                                                      new CountDownLatch(3),
-                                                      new AtomicBoolean(false)));
-    }
-
-    @Test
-    void testSubscription() throws InterruptedException {
-        MultipleResource.State state = context().get(MultipleResource.State.class).orElseThrow();
-        async(() -> client().subscribeResource(new McpSchema.SubscribeRequest("http://resource3")));
-        assertThat(state.readLatch().await(10, TimeUnit.SECONDS), is(true));
     }
 }
 
