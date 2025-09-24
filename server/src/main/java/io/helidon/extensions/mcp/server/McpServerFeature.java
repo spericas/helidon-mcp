@@ -535,13 +535,14 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         }
         McpSession session = foundSession.get();
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
+        JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
         String resourceUri = parameters.get("uri").asString().orElse(null);
         Optional<McpResourceSubscriber> subscriber = config.resourceSubscribers().stream()
                 .filter(r -> resourceUri.equals(r.uri()))
                 .findFirst();
         if (subscriber.isPresent()) {
             // update session with new subscription
-            session.subscribe(req, res, subscriber.get());
+            Optional<SseSink> sseSink = session.subscribe(req, res, subscriber.get());
 
             // if SSE, then respond to request before calling method
             if (!isStreamableHttp(req.headers())) {
@@ -549,15 +550,19 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             }
 
             // invoke user method for a new subscription that may block thread
-            McpFeatures features = mcpFeatures(req, res, session);
+            McpFeatures features = mcpFeatures(req, res, session, requestId);
             subscriber.get()
                     .subscribe()
                     .accept(McpRequest.builder()
-                                   .parameters(parameters)
-                                   .features(features)
-                                   .protocolVersion(session.protocolVersion())
+                                    .parameters(parameters)
+                                    .features(features)
+                                    .protocolVersion(session.protocolVersion())
                                     .context(session.context())
                                     .build());
+
+            // send final response using active SSE sink
+            res.result(JsonValue.EMPTY_JSON_OBJECT);
+            sendResponse(req, res, session, requestId, sseSink.orElse(null));
         } else {
             res.error(INVALID_PARAMS, "Unable to find resource subscriber");
             sendResponse(req, res, session);
@@ -572,19 +577,20 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         }
         McpSession session = foundSession.get();
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
+        JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
         String resourceUri = parameters.get("uri").asString().orElse(null);
         Optional<McpResourceUnsubscriber> unsubscriber = config.resourceUnsubscribers().stream()
                 .filter(r -> resourceUri.equals(r.uri()))
                 .findFirst();
         if (unsubscriber.isPresent()) {
             // invoke user method to unsubscribe
-            McpFeatures features = mcpFeatures(req, res, session);
+            McpFeatures features = mcpFeatures(req, res, session, requestId);
             unsubscriber.get()
                     .unsubscribe()
                     .accept(McpRequest.builder()
-                                   .parameters(parameters)
-                                   .features(features)
-                                   .protocolVersion(session.protocolVersion())
+                                    .parameters(parameters)
+                                    .features(features)
+                                    .protocolVersion(session.protocolVersion())
                                     .context(session.context())
                                     .build());
 
@@ -592,7 +598,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             session.unsubscribe(req, unsubscriber.get());
 
             // response to unsubscription request
-            res.status(Status.NO_CONTENT_204);
+            res.result(JsonValue.EMPTY_JSON_OBJECT);
             sendResponse(req, res, session);
         } else {
             res.error(INVALID_PARAMS, "Unable to find resource unsubscriber");
@@ -750,18 +756,6 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         sendResponse(req, res, session, features, requestId);
     }
 
-    private String parseCompletionName(McpParameters completion) {
-        var name = completion.get("name").asString();
-        if (name.isPresent()) {
-            return name.get();
-        }
-        var uri = completion.get("uri").asString();
-        if (uri.isPresent()) {
-            return uri.get();
-        }
-        return null;
-    }
-
     private void enableProgress(McpSession session, McpParameters parameters, McpFeatures features) {
         var progressToken = parameters.get("_meta").get("progressToken");
         if (progressToken.isEmpty()) {
@@ -842,15 +836,30 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                               McpSession session,
                               McpFeatures features,
                               JsonValue requestId) {
+        sendResponse(req, res, session, requestId, features.sseSink().orElse(null));
+    }
+
+    /**
+     * Sends response according to the protocol in use.
+     *
+     * @param req the request
+     * @param res the response
+     * @param session the active session
+     * @param sseSink the active SseSink
+     */
+    private void sendResponse(JsonRpcRequest req,
+                              JsonRpcResponse res,
+                              McpSession session,
+                              JsonValue requestId,
+                              SseSink sseSink) {
         // send response as HTTP or SSE with streamable HTTP
         if (isStreamableHttp(req.headers())) {
-            Optional<SseSink> sseSink = features.sseSink();
-            if (sseSink.isPresent()) {
-                try (var sink = sseSink.get()) {        // closes sink
+            if (sseSink != null) {
+                try (sseSink) {        // closes sink
                     JsonObject jsonObject = res.asJsonObject();
                     LOGGER.log(Level.FINEST,
                                () -> String.format("Streamable HTTP: %s", jsonObject));
-                    sink.emit(SseEvent.builder()
+                    sseSink.emit(SseEvent.builder()
                                       .name("message")
                                       .data(jsonObject)
                                       .build());

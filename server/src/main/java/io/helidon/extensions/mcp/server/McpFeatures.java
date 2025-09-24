@@ -19,8 +19,8 @@ package io.helidon.extensions.mcp.server;
 import java.util.Objects;
 import java.util.Optional;
 
-import io.helidon.http.sse.SseEvent;
 import io.helidon.common.LazyValue;
+import io.helidon.http.sse.SseEvent;
 import io.helidon.webserver.jsonrpc.JsonRpcResponse;
 import io.helidon.webserver.sse.SseSink;
 

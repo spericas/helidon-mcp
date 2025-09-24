@@ -159,55 +159,58 @@ class McpSession {
         }
     }
 
-    void subscribe(JsonRpcRequest req, JsonRpcResponse res, McpResourceSubscriber subscriber) {
+    Optional<SseSink> subscribe(JsonRpcRequest req, JsonRpcResponse res, McpResourceSubscriber subscriber) {
         if (!active.get()) {
-            return;
+            return Optional.empty();
         }
 
         lock.writeLock().lock();
         try {
+            SseSink sseSink = null;
             if (isStreamableHttp(req.headers())) {
                 SseSink existing = streamableSubscriptions.get(subscriber.uri());
                 if (existing != null) {
                     existing.close();       // close old one
                     LOGGER.log(Level.FINE, () -> "Removed existing subscription for " + subscriber.uri());
                 }
-                streamableSubscriptions.put(subscriber.uri(), res.sink(SseSink.TYPE));
+                sseSink = res.sink(SseSink.TYPE);
+                streamableSubscriptions.put(subscriber.uri(), sseSink);
             } else {
                 McpSession existing = sseSubscriptions.get(subscriber.uri());
                 if (existing != null) {
                     LOGGER.log(Level.FINE, () -> "Found existing subscription for " + subscriber.uri());
-                    return;
+                    return Optional.empty();
                 }
                 sseSubscriptions.put(subscriber.uri(), this);
             }
             LOGGER.log(Level.FINE, () -> "New subscription for " + subscriber.uri());
+            return Optional.ofNullable(sseSink);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    void unsubscribe(JsonRpcRequest req, McpResourceUnsubscriber unsubscriber) {
+    Optional<SseSink> unsubscribe(JsonRpcRequest req, McpResourceUnsubscriber unsubscriber) {
         if (!active.get()) {
-            return;
+            return Optional.empty();
         }
 
         lock.writeLock().lock();
         try {
+            SseSink sseSink = null;
             if (isStreamableHttp(req.headers())) {
-                SseSink sseSink = streamableSubscriptions.remove(unsubscriber.uri());
+                sseSink = streamableSubscriptions.remove(unsubscriber.uri());
                 if (sseSink == null) {
                     LOGGER.log(Level.FINE, () -> "No subscription found for " + unsubscriber.uri());
-                    return;
                 }
             } else {
                 McpSession session = sseSubscriptions.remove(unsubscriber.uri());
                 if (session == null) {
                     LOGGER.log(Level.FINE, () -> "No subscription found for " + unsubscriber.uri());
-                    return;
                 }
             }
             LOGGER.log(Level.FINE, () -> "Removed subscription for " + unsubscriber.uri());
+            return Optional.ofNullable(sseSink);
         }  finally {
             lock.writeLock().unlock();
         }

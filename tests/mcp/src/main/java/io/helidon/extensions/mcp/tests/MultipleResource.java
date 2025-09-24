@@ -19,9 +19,11 @@ package io.helidon.extensions.mcp.tests;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.helidon.common.context.Context;
 import io.helidon.common.media.type.MediaType;
 import io.helidon.common.media.type.MediaTypes;
 import io.helidon.extensions.mcp.server.McpRequest;
@@ -29,6 +31,7 @@ import io.helidon.extensions.mcp.server.McpResource;
 import io.helidon.extensions.mcp.server.McpResourceContent;
 import io.helidon.extensions.mcp.server.McpResourceContents;
 import io.helidon.extensions.mcp.server.McpResourceSubscriber;
+import io.helidon.extensions.mcp.server.McpResourceUnsubscriber;
 import io.helidon.extensions.mcp.server.McpServerFeature;
 import io.helidon.webserver.http.HttpRouting;
 
@@ -40,11 +43,7 @@ class MultipleResource {
     }
 
     static void setUpRoute(HttpRouting.Builder builder) {
-        setUpRoute(builder, null);
-    }
-
-    static void setUpRoute(HttpRouting.Builder builder, CountDownLatch latch) {
-        MyResource myResource = new MyResource(latch);
+        MyResource myResource = new MyResource();
         builder.addFeature(McpServerFeature.builder()
                                    .path("/")
                                    .addResource(resource -> resource
@@ -64,30 +63,42 @@ class MultipleResource {
                                                                  MediaTypes.APPLICATION_JSON))))
 
                                    .addResource(myResource)
-                                   .addResourceSubscriber(new MyResourceSubscriber(myResource)));
+                                   .addResourceSubscriber(new MyResourceSubscriber(myResource))
+                                   .addResourceUnsubscriber(new MyResourceUnsubscriber(myResource)));
+    }
+
+    private static final Context CONTEXT = Context.create();
+
+    static Context context() {
+        return CONTEXT;
+    }
+
+    /**
+     * This global state is required until we support keeping state in subscribers
+     * and unsubscribers. It must be stored in {@link #CONTEXT}.
+     *
+     * @param readLatch resource read latch
+     * @param updateLatch resource update latch
+     * @param cancelled subscription cancellation
+     */
+    record State(CountDownLatch readLatch, CountDownLatch updateLatch, AtomicBoolean cancelled) {
     }
 
     private static final class MyResource implements McpResource {
 
-        private final CountDownLatch latch;
-
-        MyResource(CountDownLatch latch) {
-            this.latch = latch;
-        }
-
         @Override
         public String uri() {
-            return "http://myresource";
+            return "http://resource3";
         }
 
         @Override
         public String name() {
-            return "myresource";
+            return "resource3";
         }
 
         @Override
         public String description() {
-            return "My resource";
+            return "Resource 3";
         }
 
         @Override
@@ -101,14 +112,13 @@ class MultipleResource {
         }
 
         List<McpResourceContent> read(McpRequest request) {
-            if (latch != null) {
-                latch.countDown();      // count number of reads
-            }
+            context().get(State.class).ifPresent(state -> state.readLatch().countDown());
             return List.of(McpResourceContents.textContent("text"),
                            McpResourceContents.binaryContent("binary".getBytes(StandardCharsets.UTF_8),
                                                              MediaTypes.APPLICATION_JSON));
         }
     }
+
 
     private static final class MyResourceSubscriber implements McpResourceSubscriber {
 
@@ -126,14 +136,38 @@ class MultipleResource {
         @Override
         public Consumer<McpRequest> subscribe() {
             return request -> {
+                State state = context().get(State.class).orElseThrow();
                 try {
-                    for (int i = 0; i < 3; i++) {
+                    while (!state.cancelled().get() && state.updateLatch().getCount() > 0) {
                         request.features().updateSubscription(resource.uri());
                         Thread.sleep(100);      // simulate delay
+                        state.updateLatch().countDown();
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+            };
+        }
+    }
+
+    private static final class MyResourceUnsubscriber implements McpResourceUnsubscriber {
+
+        private final MyResource resource;
+
+        MyResourceUnsubscriber(MyResource resource) {
+            this.resource = resource;
+        }
+
+        @Override
+        public String uri() {
+            return resource.uri();
+        }
+
+        @Override
+        public Consumer<McpRequest> unsubscribe() {
+            return request -> {
+                State state = context().get(State.class).orElseThrow();
+                state.cancelled.set(true);
             };
         }
     }
