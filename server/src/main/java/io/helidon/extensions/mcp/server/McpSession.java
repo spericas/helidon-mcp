@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -47,6 +49,7 @@ import static io.helidon.extensions.mcp.server.McpSession.State.UNINITIALIZED;
 class McpSession {
     private static final Logger LOGGER = Logger.getLogger(McpSession.class.getName());
 
+    private final McpSessions sessions;
     private final Set<McpCapability> capabilities;
     private final Context context = Context.create();
     private final AtomicBoolean active = new AtomicBoolean(true);
@@ -56,16 +59,22 @@ class McpSession {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<String, McpSession> sseSubscriptions = new HashMap<>();
     private final Map<String, SseSink> streamableSubscriptions = new HashMap<>();
+    private final Map<String, CountDownLatch> threadSubscriptions = new ConcurrentHashMap<>();
 
     private volatile String protocolVersion;
     private volatile State state = UNINITIALIZED;
 
-    McpSession() {
-        this(new HashSet<>());
+    McpSession(McpSessions sessions) {
+        this(sessions, new HashSet<>());
     }
 
-    McpSession(Set<McpCapability> capabilities) {
+    McpSession(McpSessions sessions, Set<McpCapability> capabilities) {
+        this.sessions = sessions;
         this.capabilities = capabilities;
+    }
+
+    McpSessions sessions() {
+        return sessions;
     }
 
     void poll(Consumer<JsonObject> consumer) {
@@ -144,6 +153,10 @@ class McpSession {
         this.protocolVersion = protocolVersion;
     }
 
+    boolean hasSubscription(String uri) {
+        return streamableSubscriptions.containsKey(uri) || sseSubscriptions.containsKey(uri);
+    }
+
     Optional<SseSink> findSubscription(String uri) {
         lock.readLock().lock();
         try {
@@ -159,7 +172,7 @@ class McpSession {
         }
     }
 
-    Optional<SseSink> subscribe(JsonRpcRequest req, JsonRpcResponse res, McpResourceSubscriber subscriber) {
+    Optional<SseSink> subscribe(JsonRpcRequest req, JsonRpcResponse res, String uri) {
         if (!active.get()) {
             return Optional.empty();
         }
@@ -168,29 +181,29 @@ class McpSession {
         try {
             SseSink sseSink = null;
             if (isStreamableHttp(req.headers())) {
-                SseSink existing = streamableSubscriptions.get(subscriber.uri());
+                SseSink existing = streamableSubscriptions.get(uri);
                 if (existing != null) {
                     existing.close();       // close old one
-                    LOGGER.log(Level.FINE, () -> "Removed existing subscription for " + subscriber.uri());
+                    LOGGER.log(Level.FINE, () -> "Removed existing subscription for " + uri);
                 }
                 sseSink = res.sink(SseSink.TYPE);
-                streamableSubscriptions.put(subscriber.uri(), sseSink);
+                streamableSubscriptions.put(uri, sseSink);
             } else {
-                McpSession existing = sseSubscriptions.get(subscriber.uri());
+                McpSession existing = sseSubscriptions.get(uri);
                 if (existing != null) {
-                    LOGGER.log(Level.FINE, () -> "Found existing subscription for " + subscriber.uri());
+                    LOGGER.log(Level.FINE, () -> "Found existing subscription for " + uri);
                     return Optional.empty();
                 }
-                sseSubscriptions.put(subscriber.uri(), this);
+                sseSubscriptions.put(uri, this);
             }
-            LOGGER.log(Level.FINE, () -> "New subscription for " + subscriber.uri());
+            LOGGER.log(Level.FINE, () -> "New subscription for " + uri);
             return Optional.ofNullable(sseSink);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    Optional<SseSink> unsubscribe(JsonRpcRequest req, McpResourceUnsubscriber unsubscriber) {
+    Optional<SseSink> unsubscribe(JsonRpcRequest req, String uri) {
         if (!active.get()) {
             return Optional.empty();
         }
@@ -199,20 +212,36 @@ class McpSession {
         try {
             SseSink sseSink = null;
             if (isStreamableHttp(req.headers())) {
-                sseSink = streamableSubscriptions.remove(unsubscriber.uri());
+                sseSink = streamableSubscriptions.remove(uri);
                 if (sseSink == null) {
-                    LOGGER.log(Level.FINE, () -> "No subscription found for " + unsubscriber.uri());
+                    LOGGER.log(Level.FINE, () -> "No subscription found for " + uri);
                 }
             } else {
-                McpSession session = sseSubscriptions.remove(unsubscriber.uri());
+                McpSession session = sseSubscriptions.remove(uri);
                 if (session == null) {
-                    LOGGER.log(Level.FINE, () -> "No subscription found for " + unsubscriber.uri());
+                    LOGGER.log(Level.FINE, () -> "No subscription found for " + uri);
                 }
             }
-            LOGGER.log(Level.FINE, () -> "Removed subscription for " + unsubscriber.uri());
+            LOGGER.log(Level.FINE, () -> "Removed subscription for " + uri);
             return Optional.ofNullable(sseSink);
         }  finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    void blockSubscribe(String uri) throws InterruptedException {
+        if (active.get()) {
+            CountDownLatch latch = threadSubscriptions.computeIfAbsent(uri, k -> new CountDownLatch(1));
+            latch.await();
+        }
+    }
+
+    void unblockSubscribe(String uri) {
+        if (active.get()) {
+            CountDownLatch latch = threadSubscriptions.remove(uri);
+            if (latch != null) {
+                latch.countDown();
+            }
         }
     }
 

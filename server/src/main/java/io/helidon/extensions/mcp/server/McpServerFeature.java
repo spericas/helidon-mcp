@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.helidon.builder.api.RuntimeType;
-import io.helidon.common.LruCache;
 import io.helidon.common.mapper.OptionalValue;
 import io.helidon.http.HeaderName;
 import io.helidon.http.HeaderNames;
@@ -102,9 +101,9 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     private final McpPagination<McpResource> resources;
     private final McpPagination<McpResourceTemplate> resourceTemplates;
     private final Set<McpCapability> capabilities = new HashSet<>();
+    private final McpSessions sessions = new McpSessions(SESSION_CACHE_SIZE);
     private final Map<String, McpCompletion> promptCompletions = new ConcurrentHashMap<>();
     private final Map<String, McpCompletion> resourceCompletions = new ConcurrentHashMap<>();
-    private final LruCache<String, McpSession> sessions = LruCache.create(SESSION_CACHE_SIZE);
 
     private McpServerFeature(McpServerConfig config) {
         String path = config.path();
@@ -255,7 +254,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             response.status(Status.METHOD_NOT_ALLOWED_405).send();
         } else {
             String sessionId = UUID.randomUUID().toString();
-            McpSession session = new McpSession(capabilities);
+            McpSession session = new McpSession(sessions, capabilities);
             sessions.put(sessionId, session);
 
             try (SseSink sink = response.sink(SseSink.TYPE)) {
@@ -350,7 +349,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         if (foundSession.isEmpty()) {
             // create a new session
             String sessionId = UUID.randomUUID().toString();
-            McpSession session = new McpSession();
+            McpSession session = new McpSession(sessions);
             sessions.put(sessionId, session);
 
             // parse capabilities and update response
@@ -537,18 +536,30 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
         JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
         String resourceUri = parameters.get("uri").asString().orElse(null);
+
+        // check if resource exists
+        Optional<McpResource> resource = config.resources().stream()
+                .filter(r -> resourceUri.equals(r.uri()))
+                .findFirst();
+        if (resource.isEmpty()) {
+            res.error(INVALID_PARAMS, "Unable to find resource");
+            sendResponse(req, res, session);
+            return;
+        }
+
+        // update session with new subscription
+        Optional<SseSink> sseSink = session.subscribe(req, res, resourceUri);
+
+        // if SSE, then respond to request since subscriber can block
+        if (!isStreamableHttp(req.headers())) {
+            res.status(Status.NO_CONTENT_204).send();
+        }
+
+        // if subscriber exists then call it
         Optional<McpResourceSubscriber> subscriber = config.resourceSubscribers().stream()
                 .filter(r -> resourceUri.equals(r.uri()))
                 .findFirst();
         if (subscriber.isPresent()) {
-            // update session with new subscription
-            Optional<SseSink> sseSink = session.subscribe(req, res, subscriber.get());
-
-            // if SSE, then respond to request before calling method
-            if (!isStreamableHttp(req.headers())) {
-                res.status(Status.NO_CONTENT_204).send();
-            }
-
             // invoke user method for a new subscription that may block thread
             McpFeatures features = mcpFeatures(req, res, session, requestId);
             subscriber.get()
@@ -563,9 +574,20 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             // send final response using active SSE sink
             res.result(JsonValue.EMPTY_JSON_OBJECT);
             sendResponse(req, res, session, requestId, sseSink.orElse(null));
-        } else {
-            res.error(INVALID_PARAMS, "Unable to find resource subscriber");
-            sendResponse(req, res, session);
+            return;
+        }
+
+        // otherwise, we need to block on streamable HTTP
+        if (sseSink.isPresent()) {
+            try {
+                session.blockSubscribe(resourceUri);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            // send final response after unblocking
+            res.result(JsonValue.EMPTY_JSON_OBJECT);
+            sendResponse(req, res, session, requestId, sseSink.get());
         }
     }
 
@@ -579,6 +601,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
         JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
         String resourceUri = parameters.get("uri").asString().orElse(null);
+
+        // update session with unsubscription
+        Optional<SseSink> sseSink = session.unsubscribe(req, resourceUri);
+
+        // if unsubscriber exists then call it
         Optional<McpResourceUnsubscriber> unsubscriber = config.resourceUnsubscribers().stream()
                 .filter(r -> resourceUri.equals(r.uri()))
                 .findFirst();
@@ -594,15 +621,19 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                     .context(session.context())
                                     .build());
 
-            // update session and remove subscription
-            session.unsubscribe(req, unsubscriber.get());
-
             // response to unsubscription request
             res.result(JsonValue.EMPTY_JSON_OBJECT);
             sendResponse(req, res, session);
-        } else {
-            res.error(INVALID_PARAMS, "Unable to find resource unsubscriber");
-            sendResponse(req, res, session);
+            return;
+        }
+
+        // otherwise, we need to unblock subscriber with streamable HTTP
+        if (sseSink.isPresent()) {
+            session.unblockSubscribe(resourceUri);
+
+            // send final response after unblocking
+            res.result(JsonValue.EMPTY_JSON_OBJECT);
+            sendResponse(req, res, session, requestId, sseSink.get());
         }
     }
 

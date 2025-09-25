@@ -20,11 +20,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.helidon.common.LazyValue;
-import io.helidon.http.sse.SseEvent;
 import io.helidon.webserver.jsonrpc.JsonRpcResponse;
 import io.helidon.webserver.sse.SseSink;
-
-import jakarta.json.JsonObject;
 
 /**
  * Support for optional client features:
@@ -49,9 +46,10 @@ public final class McpFeatures {
     private final JsonRpcResponse response;
     private final McpSession session;
 
+    private SseSink sseSink;
     private McpProgress progress;
     private McpLogger logger;
-    private SseSink sseSink;
+    private McpSubscriptions subscriptions;
 
     McpFeatures(McpSession session) {
         Objects.requireNonNull(session, "session is null");
@@ -101,25 +99,15 @@ public final class McpFeatures {
     }
 
     /**
-     * Send a resource update notification to the client. It requires the
-     * resource to be associated with an active subscription.
+     * Get a {@link McpSubscriptions} feature.
      *
-     * @param uri resource URI
-     * @throws java.lang.IllegalStateException if subscription is not found
-     * @throws java.io.UncheckedIOException if I/O exception is thrown
+     * @return the MCP subscriptions
      */
-    public void updateSubscription(String uri) {
-        Optional<SseSink> sseSink = session.findSubscription(uri);
-        JsonObject notification = McpJsonRpc.createUpdateNotification(uri);
-        SseEvent event = SseEvent.builder()
-                .name("message")
-                .data(notification)
-                .build();
-        if (sseSink.isPresent()) {
-            sseSink.get().emit(event);
-        } else {
-            session.send(notification);
+    public McpSubscriptions subscriptions() {
+        if (subscriptions == null) {
+            subscriptions = new McpSubscriptions(session);
         }
+        return subscriptions;
     }
 
     /**

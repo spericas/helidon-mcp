@@ -26,6 +26,7 @@ import java.util.function.Function;
 import io.helidon.common.context.Context;
 import io.helidon.common.media.type.MediaType;
 import io.helidon.common.media.type.MediaTypes;
+import io.helidon.extensions.mcp.server.McpFeatures;
 import io.helidon.extensions.mcp.server.McpRequest;
 import io.helidon.extensions.mcp.server.McpResource;
 import io.helidon.extensions.mcp.server.McpResourceContent;
@@ -138,8 +139,9 @@ class MultipleResource {
             return request -> {
                 State state = context().get(State.class).orElseThrow();
                 try {
+                    McpFeatures features = request.features();
                     while (!state.cancelled().get() && state.updateLatch().getCount() > 0) {
-                        request.features().updateSubscription(resource.uri());
+                        features.subscriptions().sendSessionUpdate(resource.uri());
                         Thread.sleep(100);      // simulate delay
                         state.updateLatch().countDown();
                     }
