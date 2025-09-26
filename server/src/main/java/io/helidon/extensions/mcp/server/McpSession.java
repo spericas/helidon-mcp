@@ -16,6 +16,7 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -52,6 +54,7 @@ class McpSession {
     private final McpSessions sessions;
     private final Set<McpCapability> capabilities;
     private final Context context = Context.create();
+    private final McpServerConfig config;
     private final AtomicBoolean active = new AtomicBoolean(true);
     private final BlockingQueue<JsonObject> queue = new LinkedBlockingQueue<>();
     private final LruCache<JsonValue, McpFeatures> features = LruCache.create();
@@ -64,13 +67,14 @@ class McpSession {
     private volatile String protocolVersion;
     private volatile State state = UNINITIALIZED;
 
-    McpSession(McpSessions sessions) {
-        this(sessions, new HashSet<>());
+    McpSession(McpSessions sessions, McpServerConfig config) {
+        this(sessions, new HashSet<>(), config);
     }
 
-    McpSession(McpSessions sessions, Set<McpCapability> capabilities) {
+    McpSession(McpSessions sessions, Set<McpCapability> capabilities, McpServerConfig config) {
         this.sessions = sessions;
         this.capabilities = capabilities;
+        this.config = config;
     }
 
     McpSessions sessions() {
@@ -232,7 +236,15 @@ class McpSession {
     void blockSubscribe(String uri) throws InterruptedException {
         if (active.get()) {
             CountDownLatch latch = threadSubscriptions.computeIfAbsent(uri, k -> new CountDownLatch(1));
-            latch.await();
+            Duration timeout = config.subscriptionTimeout();
+            try {
+                boolean completed = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                if (!completed) {
+                    LOGGER.log(Level.FINEST, () -> "Timed out waiting subscription for " + uri);
+                }
+            } catch (InterruptedException e) {
+                LOGGER.log(Level.FINEST, "Interrupted while waiting for subscription");
+            }
         }
     }
 

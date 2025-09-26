@@ -254,7 +254,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             response.status(Status.METHOD_NOT_ALLOWED_405).send();
         } else {
             String sessionId = UUID.randomUUID().toString();
-            McpSession session = new McpSession(sessions, capabilities);
+            McpSession session = new McpSession(sessions, capabilities, config);
             sessions.put(sessionId, session);
 
             try (SseSink sink = response.sink(SseSink.TYPE)) {
@@ -349,7 +349,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         if (foundSession.isEmpty()) {
             // create a new session
             String sessionId = UUID.randomUUID().toString();
-            McpSession session = new McpSession(sessions);
+            McpSession session = new McpSession(sessions, config);
             sessions.put(sessionId, session);
 
             // parse capabilities and update response

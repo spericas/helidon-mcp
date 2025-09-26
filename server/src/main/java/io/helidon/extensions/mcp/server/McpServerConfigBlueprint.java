@@ -16,6 +16,7 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.time.Duration;
 import java.util.List;
 
 import io.helidon.builder.api.Option;
@@ -58,6 +59,11 @@ interface McpServerConfigBlueprint extends Prototype.Factory<McpServerFeature> {
     @Option.Default("0.0.1")
     String version();
 
+    /**
+     * Server logging configuration.
+     *
+     * @return logging
+     */
     @Option.Configured
     @Option.DefaultBoolean(true)
     boolean logging();
@@ -101,6 +107,16 @@ interface McpServerConfigBlueprint extends Prototype.Factory<McpServerFeature> {
     @Option.DefaultInt(DEFAULT_PAGE_SIZE)
     @Option.Decorator(McpPagination.PageSizeDecorator.class)
     int resourceTemplatesPageSize();
+
+    /**
+     * Timeout for resource subscriptions without a corresponding {@link McpResourceSubscriber}
+     * that can control expiration.
+     *
+     * @return subscription timeout
+     */
+    @Option.Configured
+    @Option.Default("PT2M")
+    Duration subscriptionTimeout();
 
     /**
      * List of tools registered to this server.

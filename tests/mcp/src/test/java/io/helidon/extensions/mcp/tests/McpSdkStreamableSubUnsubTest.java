@@ -71,7 +71,6 @@ class McpSdkStreamableSubUnsubTest extends AbstractMcpSdkSubUnsubTest {
 
         // unsubscribe, should unblock subscriber
         client().unsubscribeResource(new McpSchema.UnsubscribeRequest("http://myresource"));
-        client().close();
 
         // check state after test execution
         assertThat(readLatch.await(10, TimeUnit.SECONDS), is(true));
