@@ -535,7 +535,8 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         McpSession session = foundSession.get();
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
         JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
-        String resourceUri = parameters.get("uri").asString().orElse(null);
+        String resourceUri = parameters.get("uri").asString()
+                .orElseThrow(() -> new McpException("uri is required"));
 
         // check if resource exists
         Optional<McpResource> resource = config.resources().stream()
@@ -552,7 +553,8 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
 
         // if SSE, then respond to request since subscriber can block
         if (!isStreamableHttp(req.headers())) {
-            res.status(Status.NO_CONTENT_204).send();
+            res.result(JsonValue.EMPTY_JSON_OBJECT);
+            res.status(Status.OK_200).send();
         }
 
         // if subscriber exists then call it
@@ -582,7 +584,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             try {
                 session.blockSubscribe(resourceUri);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                LOGGER.log(Level.FINEST, "Subscriber thread interrupted");
             }
 
             // send final response after unblocking
@@ -600,7 +602,9 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         McpSession session = foundSession.get();
         McpParameters parameters = new McpParameters(req.params(), req.params().asJsonObject());
         JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
-        String resourceUri = parameters.get("uri").asString().orElse(null);
+        String resourceUri = parameters.get("uri").asString()
+                .orElseThrow(() -> new McpException("uri is required"));
+        McpFeatures features = mcpFeatures(req, res, session, requestId);
 
         // update session with unsubscription
         Optional<SseSink> sseSink = session.unsubscribe(req, resourceUri);
@@ -611,7 +615,6 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                 .findFirst();
         if (unsubscriber.isPresent()) {
             // invoke user method to unsubscribe
-            McpFeatures features = mcpFeatures(req, res, session, requestId);
             unsubscriber.get()
                     .unsubscribe()
                     .accept(McpRequest.builder()
@@ -630,11 +633,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         // otherwise, we need to unblock subscriber with streamable HTTP
         if (sseSink.isPresent()) {
             session.unblockSubscribe(resourceUri);
-
-            // send final response after unblocking
-            res.result(JsonValue.EMPTY_JSON_OBJECT);
-            sendResponse(req, res, session, requestId, sseSink.get());
         }
+
+        // send final response
+        res.result(JsonValue.EMPTY_JSON_OBJECT);
+        sendResponse(req, res, session, features, requestId);
     }
 
     private void resourceTemplateListRpc(JsonRpcRequest req, JsonRpcResponse res) {

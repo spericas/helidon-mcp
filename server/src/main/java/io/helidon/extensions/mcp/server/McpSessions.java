@@ -25,8 +25,7 @@ import java.util.function.Supplier;
 import io.helidon.common.LruCache;
 
 /**
- * An LRU cache for {@link McpSession}s that also supports returning a snapshot
- * (immutable list) of sessions in the cache.
+ * An LRU cache for {@link McpSession}s that also implements {@link Iterable}.
  */
 final class McpSessions implements LruCache<String, McpSession>, Iterable<McpSession> {
 
