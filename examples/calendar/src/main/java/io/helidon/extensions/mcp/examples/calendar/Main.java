@@ -18,6 +18,7 @@ package io.helidon.extensions.mcp.examples.calendar;
 
 import io.helidon.config.Config;
 import io.helidon.extensions.mcp.server.McpServerConfig;
+import io.helidon.extensions.mcp.server.McpSuppliers;
 import io.helidon.service.registry.Services;
 import io.helidon.webserver.WebServer;
 import io.helidon.webserver.http.HttpRouting;
@@ -51,7 +52,18 @@ public class Main {
         builder.addFeature(
                 McpServerConfig.builder()
                         .config(config.get("mcp.server"))
-                        .addTool(new AddCalendarEventTool(calendar))
+                        // .addTool(new AddCalendarEventTool(calendar))
+                        .addToolSupplier(new McpSuppliers.McpToolSupplier() {
+                            @Override
+                            public String name() {
+                                return "add-calendar-event";
+                            }
+
+                            @Override
+                            public AddCalendarEventTool get() {
+                                return new AddCalendarEventTool(calendar);
+                            }
+                        })
                         .addResource(new CalendarEventResource(calendar))
                         .addPrompt(new CreateCalendarEventPrompt())
                         .addCompletion(new CreateCalendarEventPromptCompletion())

@@ -127,6 +127,14 @@ interface McpServerConfigBlueprint extends Prototype.Factory<McpServerFeature> {
     List<McpTool> tools();
 
     /**
+     * List of tool suppliers registered to this server.
+     *
+     * @return tools
+     */
+    @Option.Singular
+    List<McpSuppliers.McpToolSupplier> toolSuppliers();
+
+    /**
      * List of prompts registered to this server.
      *
      * @return prompts

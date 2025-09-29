@@ -113,6 +113,9 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         List<McpResourceTemplate> templates = new CopyOnWriteArrayList<>();
         JsonRpcHandlers.Builder builder = JsonRpcHandlers.builder();
 
+        // process tool suppliers, add instance if only supplier provided
+        processToolSuppliers(config, tools);
+
         this.config = config;
         this.endpoint = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         for (McpResource resource : config.resources()) {
@@ -926,5 +929,22 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         return isStreamableHttp(req.headers())
                 ? session.createFeatures(res, requestId)
                 : session.createFeatures(requestId);
+    }
+
+    private void processToolSuppliers(McpServerConfig config, List<McpTool> tools) {
+        List<McpSuppliers.McpToolSupplier> toolSuppliers = new CopyOnWriteArrayList<>(config.toolSuppliers());
+        toolSuppliers.forEach(supplier -> {
+            McpTool tool1 = supplier.get();
+            boolean found = false;
+            for (McpTool tool2 : tools) {
+                if (tool1.name().equals(tool2.name())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                tools.add(tool1);
+            }
+        });
     }
 }
