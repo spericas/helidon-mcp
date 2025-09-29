@@ -125,6 +125,12 @@ class McpSession {
         return feat;
     }
 
+    McpFeatures createFeatures(JsonRpcResponse res, JsonValue requestId, SseSink sseSink) {
+        McpFeatures feat = new McpFeatures(this, res, sseSink);
+        features.put(requestId, feat);
+        return feat;
+    }
+
     Optional<McpFeatures> features(JsonValue requestId) {
         return features.get(requestId);
     }

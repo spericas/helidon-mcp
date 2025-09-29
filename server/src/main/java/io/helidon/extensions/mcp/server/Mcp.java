@@ -272,6 +272,34 @@ public final class Mcp {
     }
 
     /**
+     * Annotation to define a resource subscriber.
+     */
+    @Target(METHOD)
+    @Retention(RUNTIME)
+    public @interface ResourceSubscriber {
+        /**
+         * Resource URI.
+         *
+         * @return uri of resource
+         */
+        String value();
+    }
+
+    /**
+     * Annotation to define a resource unsubscriber.
+     */
+    @Target(METHOD)
+    @Retention(RUNTIME)
+    public @interface ResourceUnsubscriber {
+        /**
+         * Resource URI.
+         *
+         * @return uri of resource
+         */
+        String value();
+    }
+
+    /**
      * Annotation to define JSON Schema of a type used as a tool parameter.
      */
     public @interface JsonSchema {

@@ -64,6 +64,15 @@ public final class McpFeatures {
         this.session = session;
     }
 
+    McpFeatures(McpSession session, JsonRpcResponse response, SseSink sseSink) {
+        Objects.requireNonNull(response, "response is null");
+        Objects.requireNonNull(session, "session is null");
+        Objects.requireNonNull(sseSink, "sseSink is null");
+        this.response = response;
+        this.session = session;
+        this.sseSink = sseSink;
+    }
+
     /**
      * Get a {@link McpProgress} feature.
      *

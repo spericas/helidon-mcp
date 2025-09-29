@@ -46,6 +46,7 @@ import io.helidon.common.types.TypedElementInfo;
 
 import static io.helidon.extensions.mcp.codegen.McpJsonSchemaCodegen.addSchemaMethodBody;
 import static io.helidon.extensions.mcp.codegen.McpJsonSchemaCodegen.getDescription;
+import static io.helidon.extensions.mcp.codegen.McpTypes.CONSUMER_REQUEST;
 import static io.helidon.extensions.mcp.codegen.McpTypes.FUNCTION_REQUEST_COMPLETION_CONTENT;
 import static io.helidon.extensions.mcp.codegen.McpTypes.FUNCTION_REQUEST_LIST_PROMPT_CONTENT;
 import static io.helidon.extensions.mcp.codegen.McpTypes.FUNCTION_REQUEST_LIST_RESOURCE_CONTENT;
@@ -77,7 +78,11 @@ import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCES_PAGE_SIZE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_CONTENTS;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_INTERFACE;
+import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_SUBSCRIBER;
+import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_SUBSCRIBER_INTERFACE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_TEMPLATES_PAGE_SIZE;
+import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_UNSUBSCRIBER;
+import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_RESOURCE_UNSUBSCRIBER_INTERFACE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_ROLE;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_ROLE_ENUM;
 import static io.helidon.extensions.mcp.codegen.McpTypes.MCP_SERVER;
@@ -154,6 +159,7 @@ final class McpCodegen implements CodegenExtension {
         generatePrompts(generatedType, serverClassModel, type);
         generateResources(generatedType, serverClassModel, type);
         generateCompletions(generatedType, serverClassModel, type);
+        generateSubscribers(generatedType, serverClassModel, type);
 
         serverClassModel.addMethod(method -> addRoutingMethod(method, type));
         roundCtx.addGeneratedType(generatedType, serverClassModel, mcpServerType, type.originatingElementValue());
@@ -171,7 +177,7 @@ final class McpCodegen implements CodegenExtension {
                 .addParameter(rules -> rules.type(HTTP_ROUTING_BUILDER)
                         .name("routing"))
                 .addContent(MCP_SERVER_CONFIG)
-                .addContent(".Builder builder =")
+                .addContent(".Builder builder = ")
                 .addContent(MCP_SERVER_CONFIG)
                 .addContentLine(".builder();")
                 .addContent("builder.name(")
@@ -890,6 +896,85 @@ final class McpCodegen implements CodegenExtension {
                 .addContentLine("return builder.build();");
     }
 
+    private void generateSubscribers(TypeName generatedType, ClassModel.Builder classModel, TypeInfo type) {
+        List<TypedElementInfo> subscribers = getElementsWithAnnotation(type, MCP_RESOURCE_SUBSCRIBER);
+
+        if (!subscribers.isEmpty()) {
+            classModel.addImport(MCP_RESOURCE_SUBSCRIBER_INTERFACE);
+
+            for (TypedElementInfo element : subscribers) {
+                TypeName innerTypeName = createClassName(generatedType, element, "__ResourceSubscriber");
+                Annotation mcpCompletion = element.annotation(MCP_RESOURCE_SUBSCRIBER);
+                String uri = mcpCompletion.value().orElse("");
+
+                components.get(McpKind.SUBSCRIBER).add(innerTypeName);
+                classModel.addInnerClass(clazz -> clazz
+                        .name(innerTypeName.className())
+                        .addInterface(MCP_RESOURCE_SUBSCRIBER_INTERFACE)
+                        .accessModifier(AccessModifier.PRIVATE)
+                        .addMethod(method -> addSubscriberUriMethod(method, uri))
+                        .addMethod(method -> addSubscriberMethod(method, element, "subscribe")));
+            }
+        }
+
+        List<TypedElementInfo> unsubscribers = getElementsWithAnnotation(type, MCP_RESOURCE_UNSUBSCRIBER);
+        if (!unsubscribers.isEmpty()) {
+            classModel.addImport(MCP_RESOURCE_UNSUBSCRIBER_INTERFACE);
+
+            for (TypedElementInfo element : unsubscribers) {
+                TypeName innerTypeName = createClassName(generatedType, element, "__ResourceUnsubscriber");
+                Annotation mcpCompletion = element.annotation(MCP_RESOURCE_UNSUBSCRIBER);
+                String uri = mcpCompletion.value().orElse("");
+
+                components.get(McpKind.UNSUBSCRIBER).add(innerTypeName);
+                classModel.addInnerClass(clazz -> clazz
+                        .name(innerTypeName.className())
+                        .addInterface(MCP_RESOURCE_UNSUBSCRIBER_INTERFACE)
+                        .accessModifier(AccessModifier.PRIVATE)
+                        .addMethod(method -> addSubscriberUriMethod(method, uri))
+                        .addMethod(method -> addSubscriberMethod(method, element, "unsubscribe")));
+            }
+        }
+    }
+
+    private void addSubscriberUriMethod(Method.Builder builder, String uri) {
+        builder.name("uri")
+                .addAnnotation(Annotations.OVERRIDE)
+                .returnType(TypeNames.STRING)
+                .addContentLine("return \"" + uri + "\";");
+    }
+
+    private void addSubscriberMethod(Method.Builder builder, TypedElementInfo element, String methodName) {
+        List<String> parameters = new ArrayList<>();
+
+        builder.name(methodName)
+                .addAnnotation(Annotations.OVERRIDE)
+                .returnType(returned -> returned.type(CONSUMER_REQUEST));
+        builder.addContentLine("return request -> {");
+
+        for (TypedElementInfo parameter : element.parameterArguments()) {
+            if (MCP_REQUEST.equals(parameter.typeName())) {
+                parameters.add("request");
+                continue;
+            }
+            if (MCP_FEATURES.equals(parameter.typeName())) {
+                parameters.add("request.features()");
+                continue;
+            }
+            if (MCP_LOGGER.equals(parameter.typeName())) {
+                parameters.add("request.features().logger()");
+            }
+        }
+        String params = String.join(", ", parameters);
+        builder.addContent("delegate.")
+                .addContent(element.elementName())
+                .addContent("(")
+                .addContent(params)
+                .addContentLine(");")
+                .decreaseContentPadding()
+                .addContentLine("};");
+    }
+
     private boolean isBoolean(TypeName type) {
         return TypeNames.PRIMITIVE_BOOLEAN.equals(type) || TypeNames.BOXED_BOOLEAN.equals(type);
     }
@@ -949,13 +1034,18 @@ final class McpCodegen implements CodegenExtension {
         components.put(McpKind.PROMPT, new LinkedList<>());
         components.put(McpKind.RESOURCE, new LinkedList<>());
         components.put(McpKind.COMPLETION, new LinkedList<>());
+        components.put(McpKind.SUBSCRIBER, new LinkedList<>());
+        components.put(McpKind.UNSUBSCRIBER, new LinkedList<>());
+
     }
 
     private enum McpKind {
         TOOL("addTool"),
         RESOURCE("addResource"),
         PROMPT("addPrompt"),
-        COMPLETION("addCompletion");
+        COMPLETION("addCompletion"),
+        SUBSCRIBER("addResourceSubscriber"),
+        UNSUBSCRIBER("addResourceUnsubscriber"),;
 
         private final String methodName;
 
