@@ -39,7 +39,8 @@ final class McpTypes {
     static final TypeName MCP_PROMPTS_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.PromptsPageSize");
     static final TypeName MCP_RESOURCES_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourcesPageSize");
     static final TypeName MCP_RESOURCE_SUBSCRIBER = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceSubscriber");
-    static final TypeName MCP_RESOURCE_UNSUBSCRIBER = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceUnsubscriber");
+    static final TypeName MCP_RESOURCE_UNSUBSCRIBER =
+            TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceUnsubscriber");
     static final TypeName MCP_RESOURCE_TEMPLATES_PAGE_SIZE =
             TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceTemplatesPageSize");
     //Implementations
