@@ -362,6 +362,77 @@ McpResourceContent text = McpResourceContents.textContent("text");
 McpResourceContent binary = McpResourceContents.binaryContent(gzipBytes(), "application/gzip");
 ```
 
+### Resource Subscribers
+
+MCP clients can subscribe and get notified when the content of a resource is updated.
+If a client is no longer interested in receiving update notifications, it can issue an 
+unsubscribe request.
+
+Generally, the MCP server processes subscribe and unsubscribe requests without
+any user-provided code executed on the server side. Clients simply subscribe
+and unsubscribe (within the same session) using the resource URI and updates
+are propagated to all active subscribers in all sessions.
+Helidon MCP supports server-side subscribers and unsubscribers in case logic needs
+to be executed server side to handle those events. 
+
+#### Interface
+
+Implement the `McpResourceSubscriber` interface and register it via `addResourceSubscriber`. Interfaces for subscribers and unsubscribers are identical, so we shall
+focus on subscribers in this section.
+
+```java
+class MyResourceSubscriber implements McpResourceSubscriber {
+
+    private final MyResource resource;
+
+    MyResourceSubscriber(MyResource resource) {
+        this.resource = resource;
+    }
+
+    @Override
+    public String uri() {
+        return resource.uri();
+    }
+
+    @Override
+    public Consumer<McpRequest> subscribe() {
+        return request -> monitorResource(uri());
+    }
+}
+```
+
+MCP subscriptions are available via the the features instance and can
+send notifications manually as follows:
+
+```java
+@Override
+public Consumer<McpRequest> subscribe() {
+    return request -> {
+        if (wasUpdated()) {
+            McpFeatures features = request.features();
+            features.subscriptions().sendUpdate(uri());
+        }
+    }
+}
+```
+
+#### Builder
+
+Define a resource in the builder using `addResourceSubscriber`.
+
+```java
+class McpServer {
+    public static void main(String[] args) {
+        WebServer.builder()
+                .routing(routing -> routing.addFeature(
+                    McpServerFeature.builder()
+                        .addResourceSubscriber(subscriber ->
+                            subscriber.uri("http://myresource")
+                                      .subscribe(r -> monitorResource("http://myresource")))));
+    }
+}
+```
+
 ### Completion
 
 The `Completion` feature offers auto-suggestions for prompt arguments or resource template parameters, making the server easier 

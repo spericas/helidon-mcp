@@ -563,7 +563,8 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                 .findFirst();
         if (subscriber.isPresent()) {
             // invoke user method for a new subscription that may block thread
-            McpFeatures features = mcpFeatures(req, res, session, requestId);
+            McpFeatures features = mcpFeatures(req, res, session, requestId,
+                                               sseSink.orElse(null));
             subscriber.get()
                     .subscribe()
                     .accept(McpRequest.builder()
@@ -604,10 +605,12 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         JsonValue requestId = req.rpcId().orElseThrow(() -> new McpException("request id is required"));
         String resourceUri = parameters.get("uri").asString()
                 .orElseThrow(() -> new McpException("uri is required"));
-        McpFeatures features = mcpFeatures(req, res, session, requestId);
 
         // update session with unsubscription
         Optional<SseSink> sseSink = session.unsubscribe(req, resourceUri);
+
+        // create features
+        McpFeatures features = mcpFeatures(req, res, session, requestId);
 
         // if unsubscriber exists then call it
         Optional<McpResourceUnsubscriber> unsubscriber = config.resourceUnsubscribers().stream()
@@ -626,7 +629,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
 
             // response to unsubscription request
             res.result(JsonValue.EMPTY_JSON_OBJECT);
-            sendResponse(req, res, session);
+            sendResponse(req, res, session, features, requestId);
             return;
         }
 
@@ -912,7 +915,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     }
 
     /**
-     * Get or create MCP features based on transport.
+     * Create MCP features based on transport.
      *
      * @param req the request
      * @param res the response
@@ -923,8 +926,27 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                                     JsonRpcResponse res,
                                     McpSession session,
                                     JsonValue requestId) {
-        return isStreamableHttp(req.headers())
-                ? session.createFeatures(res, requestId)
-                : session.createFeatures(requestId);
+        return mcpFeatures(req, res, session, requestId, null);
+    }
+
+    /**
+     * Create MCP features based on transport.
+     *
+     * @param req the request
+     * @param res the response
+     * @param session the session
+     * @param sseSink active SSE sink
+     * @return instance of MCP features
+     */
+    private McpFeatures mcpFeatures(JsonRpcRequest req,
+                                    JsonRpcResponse res,
+                                    McpSession session,
+                                    JsonValue requestId,
+                                    SseSink sseSink) {
+        if (isStreamableHttp(req.headers())) {
+            return sseSink != null ? session.createFeatures(res, requestId, sseSink)
+                    : session.createFeatures(res, requestId);
+        }
+        return session.createFeatures(requestId);
     }
 }

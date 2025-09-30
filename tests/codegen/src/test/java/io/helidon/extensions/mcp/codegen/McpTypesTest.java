@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.helidon.common.media.type.MediaType;
@@ -43,6 +44,8 @@ import io.helidon.extensions.mcp.server.McpPromptContents;
 import io.helidon.extensions.mcp.server.McpRequest;
 import io.helidon.extensions.mcp.server.McpResource;
 import io.helidon.extensions.mcp.server.McpResourceContents;
+import io.helidon.extensions.mcp.server.McpResourceSubscriber;
+import io.helidon.extensions.mcp.server.McpResourceUnsubscriber;
 import io.helidon.extensions.mcp.server.McpRole;
 import io.helidon.extensions.mcp.server.McpServerConfig;
 import io.helidon.extensions.mcp.server.McpTool;
@@ -129,8 +132,13 @@ class McpTypesTest {
         checkField(toCheck, checked, fields, "HELIDON_MEDIA_TYPES", MediaTypes.class);
         checkField(toCheck, checked, fields, "HTTP_ROUTING_BUILDER", HttpRouting.Builder.class);
         checkField(toCheck, checked, fields, "MCP_TOOL_ANNOTATIONS", McpToolAnnotations.class);
+        checkField(toCheck, checked, fields, "MCP_RESOURCE_SUBSCRIBER", Mcp.ResourceSubscriber.class);
+        checkField(toCheck, checked, fields, "MCP_RESOURCE_UNSUBSCRIBER", Mcp.ResourceUnsubscriber.class);
+        checkField(toCheck, checked, fields, "MCP_RESOURCE_SUBSCRIBER_INTERFACE", McpResourceSubscriber.class);
+        checkField(toCheck, checked, fields, "MCP_RESOURCE_UNSUBSCRIBER_INTERFACE", McpResourceUnsubscriber.class);
 
         checkField(toCheck, checked, fields, "LIST_MCP_PROMPT_ARGUMENT", List.class);
+        checkField(toCheck, checked, fields, "CONSUMER_REQUEST", Consumer.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_COMPLETION_CONTENT", Function.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_LIST_RESOURCE_CONTENT", Function.class);
         checkField(toCheck, checked, fields, "FUNCTION_REQUEST_LIST_TOOL_CONTENT", Function.class);

@@ -38,6 +38,9 @@ final class McpTypes {
     static final TypeName MCP_TOOLS_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ToolsPageSize");
     static final TypeName MCP_PROMPTS_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.PromptsPageSize");
     static final TypeName MCP_RESOURCES_PAGE_SIZE = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourcesPageSize");
+    static final TypeName MCP_RESOURCE_SUBSCRIBER = TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceSubscriber");
+    static final TypeName MCP_RESOURCE_UNSUBSCRIBER =
+            TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceUnsubscriber");
     static final TypeName MCP_RESOURCE_TEMPLATES_PAGE_SIZE =
             TypeName.create("io.helidon.extensions.mcp.server.Mcp.ResourceTemplatesPageSize");
     //Implementations
@@ -60,6 +63,10 @@ final class McpTypes {
     static final TypeName MCP_TOOL_ANNOTATIONS = TypeName.create("io.helidon.extensions.mcp.server.McpToolAnnotations");
     static final TypeName MCP_RESOURCE_CONTENTS = TypeName.create("io.helidon.extensions.mcp.server.McpResourceContents");
     static final TypeName MCP_COMPLETION_CONTENTS = TypeName.create("io.helidon.extensions.mcp.server.McpCompletionContents");
+    static final TypeName MCP_RESOURCE_SUBSCRIBER_INTERFACE =
+            TypeName.create("io.helidon.extensions.mcp.server.McpResourceSubscriber");
+    static final TypeName MCP_RESOURCE_UNSUBSCRIBER_INTERFACE =
+            TypeName.create("io.helidon.extensions.mcp.server.McpResourceUnsubscriber");
     //others
     static final TypeName HTTP_FEATURE = TypeName.create("io.helidon.webserver.http.HttpFeature");
     static final TypeName HELIDON_MEDIA_TYPE = TypeName.create("io.helidon.common.media.type.MediaType");
@@ -83,4 +90,6 @@ final class McpTypes {
             "java.util.function.Function<"
                     + "io.helidon.extensions.mcp.server.McpRequest, "
                     + "java.util.List<io.helidon.extensions.mcp.server.McpPromptContent>>");
+    static final TypeName CONSUMER_REQUEST = TypeName.create(
+            "java.util.function.Consumer<io.helidon.extensions.mcp.server.McpRequest>");
 }

@@ -280,6 +280,66 @@ McpResourceContent text = McpResourceContents.textContent("data");
 McpResourceContent binary = McpResourceContents.binaryContent("{\"foo\":\"bar\"}", MediaTypes.APPLICATION_JSON);
 ```
 
+### Resource Subscribers
+
+MCP clients can subscribe and get notified when the content of a resource is updated. 
+For example, if a resource represents a database table, a client can get notified when 
+a new row is added and re-read the resource to get the latest data. If a client is no
+longer interested in receiving update notifications, it can issue an unsubscribe
+request.
+
+Generally, the MCP server processes subscribe and unsubscribe requests without
+any user-provided code executed on the server side. Clients simply subscribe 
+and unsubscribe (within the same session) using the resource URI and updates 
+are propagated to all active subscribers in all sessions. 
+Helidon MCP supports server-side subscribers and unsubscribers in case logic needs 
+to be executed server side to handle those events --for example, a subscription 
+may start a thread to monitor database updates and stop it when the unsubscription 
+arrives.
+
+The following example shows our resource example together with a server-side
+subscriber and unsubscriber:
+
+```java
+@Mcp.Server
+@Mcp.Path("/subscribers")
+class McpSubscribersServer {
+
+    @Mcp.Resource(
+            uri = "http://dbtable",
+            mediaType = MediaTypes.TEXT_PLAIN_VALUE,
+            description = "table data")
+    String resource() {
+        return dbTableDataAsCsv();
+    }
+
+    @Mcp.ResourceSubscriber("http://dbtable")
+    void subscribe(McpRequest request) {
+        startDbTableMonitor();
+    }
+
+    @Mcp.ResourceUnsubscriber("http://dbtable")
+    void unsubscribe(McpRequest request) {
+        stopDbTableMonitor();
+    }
+}
+```
+
+MCP subscriptions are available via the injectable _features_ instance and can 
+send notifications manually as follows:
+
+```java
+@Mcp.ResourceSubscriber("http://dbtable")
+void subscribe(McpRequest request, McpFeatures features) {
+    if (wasUpdated()) {
+        features.subscriptions().sendUpdate("http://dbtable");
+    }
+}
+```
+
+MCP clients will automatically issue a resource read everytime an update notification
+arrives.
+
 ### Completion
 
 The `Completion` feature offers auto-suggestions for prompt arguments or resource template parameters, making the server easier
