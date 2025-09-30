@@ -610,8 +610,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         Optional<SseSink> sseSink = session.unsubscribe(req, resourceUri);
 
         // create features
-        McpFeatures features = mcpFeatures(req, res, session, requestId,
-                                           sseSink.orElse(null));
+        McpFeatures features = mcpFeatures(req, res, session, requestId);
 
         // if unsubscriber exists then call it
         Optional<McpResourceUnsubscriber> unsubscriber = config.resourceUnsubscribers().stream()
@@ -630,7 +629,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
 
             // response to unsubscription request
             res.result(JsonValue.EMPTY_JSON_OBJECT);
-            sendResponse(req, res, session);
+            sendResponse(req, res, session, features, requestId);
             return;
         }
 
