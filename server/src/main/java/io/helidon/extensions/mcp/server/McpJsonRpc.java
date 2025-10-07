@@ -16,7 +16,9 @@
 
 package io.helidon.extensions.mcp.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,11 +30,17 @@ import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReaderFactory;
+import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.JsonWriterFactory;
+import jakarta.json.stream.JsonGenerator;
 
 final class McpJsonRpc {
     static final JsonBuilderFactory JSON_BUILDER_FACTORY = Json.createBuilderFactory(Map.of());
     static final JsonReaderFactory JSON_READER_FACTORY = Json.createReaderFactory(Map.of());
+    static final JsonWriterFactory JSON_PP_WRITER_FACTORY = Json.createWriterFactory(
+            Map.of(JsonGenerator.PRETTY_PRINTING, true));
 
     private static final Map<String, JsonObject> CACHE = new ConcurrentHashMap<>();
     private static final JsonObject EMPTY_OBJECT_SCHEMA = JSON_BUILDER_FACTORY.createObjectBuilder()
@@ -480,5 +488,13 @@ final class McpJsonRpc {
 
     static JsonObject disconnectSession() {
         return JSON_BUILDER_FACTORY.createObjectBuilder().add("disconnect", true).build();
+    }
+
+    static String prettyPrint(JsonStructure json) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (JsonWriter writer = JSON_PP_WRITER_FACTORY.createWriter(baos)) {
+            writer.write(json);
+        }
+        return baos.toString(StandardCharsets.UTF_8);
     }
 }

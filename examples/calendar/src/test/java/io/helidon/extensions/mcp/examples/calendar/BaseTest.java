@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 @TestMethodOrder(OrderAnnotation.class)
@@ -54,21 +53,31 @@ abstract class BaseTest {
     void testToolList() {
         McpSchema.ListToolsResult listTool = client().listTools();
         List<McpSchema.Tool> tools = listTool.tools();
-        assertThat(tools.size(), is(1));
+        assertThat(tools.size(), is(2));
 
-        McpSchema.Tool tool = tools.getFirst();
-        assertThat(tool.name(), is("add-calendar-event"));
-        assertThat(tool.description(), is("Adds a new event to the calendar."));
+        McpSchema.Tool tool1 = tools.getFirst();
+        assertThat(tool1.name(), is("add-calendar-event"));
+        assertThat(tool1.description(), is("Adds a new event to the calendar."));
 
-        McpSchema.JsonSchema schema = tool.inputSchema();
-        assertThat(schema.type(), is("object"));
-        assertThat(schema.properties().keySet(), hasItems("name", "date", "attendees"));
+        McpSchema.JsonSchema schema1 = tool1.inputSchema();
+        assertThat(schema1.type(), is("object"));
+        assertThat(schema1.properties().keySet(), hasItems("name", "date", "attendees"));
+
+        McpSchema.Tool tool2 = tools.getLast();
+        assertThat(tool2.name(), is("list-calendar-event"));
+        assertThat(tool2.description(), is("List calendar events."));
+
+        McpSchema.JsonSchema schema2 = tool2.inputSchema();
+        assertThat(schema2.type(), is("object"));
+        assertThat(schema2.properties().keySet(), hasItems("date"));
     }
 
     @Test
     @Order(2)
-    void testToolCall() {
-        Map<String, Object> arguments = Map.of("name", "Frank-birthday", "date", "2021-04-20", "attendees", List.of("Frank"));
+    void testAddToolCall() {
+        Map<String, Object> arguments = Map.of("name", "Frank-birthday",
+                                               "date", "2021-04-20",
+                                               "attendees", List.of("Frank"));
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("add-calendar-event", arguments);
         McpSchema.CallToolResult result = client().callTool(request);
         assertThat(result.isError(), is(false));
@@ -86,6 +95,25 @@ abstract class BaseTest {
 
     @Test
     @Order(3)
+    void testListToolCall() {
+        Map<String, Object> arguments = Map.of("date", "2021-04-20");
+        McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("list-calendar-event", arguments);
+        McpSchema.CallToolResult result = client().callTool(request);
+        assertThat(result.isError(), is(false));
+
+        List<McpSchema.Content> contents = result.content();
+        assertThat(contents.size(), is(1));
+
+        McpSchema.Content content = contents.getFirst();
+        assertThat(content.type(), is("text"));
+        assertThat(content, instanceOf(McpSchema.TextContent.class));
+
+        McpSchema.TextContent textContent = (McpSchema.TextContent) content;
+        assertThat(textContent.text(), containsString("Frank-birthday"));
+    }
+
+    @Test
+    @Order(4)
     void testPromptList() {
         McpSchema.ListPromptsResult listPrompt = client().listPrompts();
         List<McpSchema.Prompt> prompts = listPrompt.prompts();
@@ -116,7 +144,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void testPromptCall() {
         Map<String, Object> arguments = Map.of("name", "Frank-birthday", "date", "2021-04-20", "attendees", "Frank");
         McpSchema.GetPromptRequest request = new McpSchema.GetPromptRequest("create-event", arguments);
@@ -138,7 +166,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void testResourceList() {
         McpSchema.ListResourcesResult result = client().listResources();
         List<McpSchema.Resource> resources = result.resources();
@@ -152,7 +180,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     void testResourceCall() {
         String uri = client().listResources().resources().getFirst().uri();
         McpSchema.ReadResourceRequest request = new McpSchema.ReadResourceRequest(uri);
@@ -171,7 +199,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(7)
+    @Order(8)
     void testResourceTemplateList() {
         McpSchema.ListResourceTemplatesResult result = client().listResourceTemplates();
         List<McpSchema.ResourceTemplate> templates = result.resourceTemplates();
@@ -185,7 +213,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     void testResourceTemplateCall() {
         McpSchema.ReadResourceRequest request = new McpSchema.ReadResourceRequest("file://events/Frank-birthday");
         McpSchema.ReadResourceResult result = client().readResource(request);
@@ -202,7 +230,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(9)
+    @Order(10)
     void testCalendarEventPromptCompletion() {
         McpSchema.CompleteRequest request1 = new McpSchema.CompleteRequest(
                 new McpSchema.PromptReference("create-event"),
@@ -231,7 +259,7 @@ abstract class BaseTest {
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     void testCalendarEventResourceCompletion() {
         McpSchema.CompleteRequest request = new McpSchema.CompleteRequest(
                 new McpSchema.ResourceReference(URI_TEMPLATE),
