@@ -390,7 +390,6 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         // log initial request
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.log(Level.FINEST, "Request:\n" + prettyPrint(req.asJsonObject()));
-            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(res.asJsonObject()));
         }
 
         // is this streamable HTTP?
@@ -424,6 +423,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             res.result(toJson(protocolVersion, capabilities, config));
             LOGGER.log(Level.FINEST, "SSE transport");
             session.send(res);
+        }
+
+        // log initial response
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(res.asJsonObject()));
         }
     }
 

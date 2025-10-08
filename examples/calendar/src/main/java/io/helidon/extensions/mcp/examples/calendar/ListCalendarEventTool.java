@@ -39,8 +39,7 @@ final class ListCalendarEventTool implements McpTool {
                         "description": "Event date in the following format YYYY-MM-DD",
                         "type": "string"
                     }
-                },
-                "required": [ ]
+                }
             }
             """;
 
