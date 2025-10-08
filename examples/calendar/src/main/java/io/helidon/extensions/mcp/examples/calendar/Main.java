@@ -52,6 +52,7 @@ public class Main {
                 McpServerConfig.builder()
                         .config(config.get("mcp.server"))
                         .addTool(new AddCalendarEventTool(calendar))
+                        .addTool(new ListCalendarEventTool(calendar))
                         .addResource(new CalendarEventResource(calendar))
                         .addPrompt(new CreateCalendarEventPrompt())
                         .addCompletion(new CreateCalendarEventPromptCompletion())

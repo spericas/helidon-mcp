@@ -79,6 +79,7 @@ import static io.helidon.extensions.mcp.server.McpJsonRpc.listPrompts;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.listResourceTemplates;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.listResources;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.listTools;
+import static io.helidon.extensions.mcp.server.McpJsonRpc.prettyPrint;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.readResource;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.toJson;
 import static io.helidon.extensions.mcp.server.McpJsonRpc.toolCall;
@@ -386,6 +387,11 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
     private void initializeRpc(JsonRpcRequest req, JsonRpcResponse res) {
         Optional<McpSession> foundSession = findSession(req);
 
+        // log initial request
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Request:\n" + prettyPrint(req.asJsonObject()));
+        }
+
         // is this streamable HTTP?
         if (foundSession.isEmpty()) {
             // create a new session
@@ -403,7 +409,7 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
             session.protocolVersion(protocolVersion);
             res.header(SESSION_ID_HEADER, sessionId);
             res.result(toJson(protocolVersion, capabilities, config));
-            LOGGER.log(Level.FINEST, () -> String.format("Streamable HTTP: %s", res.asJsonObject()));
+            LOGGER.log(Level.FINEST, "Streamable HTTP transport");
             res.send();
         } else {
             McpSession session = foundSession.get();
@@ -415,8 +421,13 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                 session.state(INITIALIZING);
             }
             res.result(toJson(protocolVersion, capabilities, config));
-            LOGGER.log(Level.FINEST, () -> String.format("SSE: %s", res.asJsonObject()));
+            LOGGER.log(Level.FINEST, "SSE transport");
             session.send(res);
+        }
+
+        // log initial response
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(res.asJsonObject()));
         }
     }
 
@@ -905,13 +916,14 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
      * @param session the active session
      */
     private void sendResponse(JsonRpcRequest req, JsonRpcResponse res, McpSession session) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Request:\n" + prettyPrint(req.asJsonObject()));
+            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(res.asJsonObject()));
+        }
+
         if (isStreamableHttp(req.headers())) {
-            LOGGER.log(Level.FINEST,
-                       () -> String.format("Streamable HTTP: %s", res.asJsonObject()));
             res.send();
         } else {
-            LOGGER.log(Level.FINEST,
-                       () -> String.format("SSE: %s", res.asJsonObject()));
             session.send(res);
         }
     }
@@ -945,26 +957,25 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
                               McpSession session,
                               JsonValue requestId,
                               SseSink sseSink) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Request:\n" + prettyPrint(req.asJsonObject()));
+            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(res.asJsonObject()));
+        }
+
         // send response as HTTP or SSE with streamable HTTP
         if (isStreamableHttp(req.headers())) {
             if (sseSink != null) {
                 try (sseSink) {        // closes sink
                     JsonObject jsonObject = res.asJsonObject();
-                    LOGGER.log(Level.FINEST,
-                               () -> String.format("Streamable HTTP: %s", jsonObject));
                     sseSink.emit(SseEvent.builder()
                                       .name("message")
                                       .data(jsonObject)
                                       .build());
                 }
             } else {
-                LOGGER.log(Level.FINEST,
-                           () -> String.format("HTTP: %s", res.asJsonObject()));
                 res.send();
             }
         } else {
-            LOGGER.log(Level.FINEST,
-                       () -> String.format("SSE: %s", res.asJsonObject()));
             session.send(res);
         }
         session.clearRequest(requestId);
@@ -1038,11 +1049,15 @@ public final class McpServerFeature implements HttpFeature, RuntimeType.Api<McpS
         if (features.isPresent()) {
             sseSink = features.get().sseSink().orElse(null);
         }
+
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, "Request:\n" + prettyPrint(request.asJsonObject()));
+            LOGGER.log(Level.FINEST, "Response:\n" + prettyPrint(response.asJsonObject()));
+        }
+
         // If streamable HTTP transport and did not switch to SSE
         // the handler manages the response
         if (isStreamableHttp(request.headers()) && sseSink == null) {
-            LOGGER.log(Level.FINEST,
-                       () -> String.format("HTTP: %s", response.asJsonObject()));
             session.get().clearRequest(requestId);
             return response.error();
         }
