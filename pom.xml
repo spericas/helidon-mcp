@@ -100,7 +100,6 @@
         <module>bom</module>
         <module>codegen</module>
         <module>server</module>
-        <module>examples/calendar-application</module>
     </modules>
 
     <dependencyManagement>
