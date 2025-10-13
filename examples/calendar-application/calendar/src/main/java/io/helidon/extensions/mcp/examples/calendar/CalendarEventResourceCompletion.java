@@ -16,6 +16,7 @@
 
 package io.helidon.extensions.mcp.examples.calendar;
 
+import java.util.List;
 import java.util.function.Function;
 
 import io.helidon.extensions.mcp.server.McpCompletion;
@@ -24,16 +25,19 @@ import io.helidon.extensions.mcp.server.McpCompletionContents;
 import io.helidon.extensions.mcp.server.McpCompletionType;
 import io.helidon.extensions.mcp.server.McpRequest;
 
-import static io.helidon.extensions.mcp.examples.calendar.Calendar.URI_TEMPLATE;
-
 /**
  * Auto-completion for {@link CalendarEventResourceTemplate}.
  */
 final class CalendarEventResourceCompletion implements McpCompletion {
+    private final Calendar calendar;
+
+    CalendarEventResourceCompletion(Calendar calendar) {
+        this.calendar = calendar;
+    }
 
     @Override
     public String reference() {
-        return URI_TEMPLATE;
+        return Calendar.EVENTS_URI_TEMPLATE;
     }
 
     @Override
@@ -47,14 +51,14 @@ final class CalendarEventResourceCompletion implements McpCompletion {
     }
 
     private McpCompletionContent complete(McpRequest request) {
-        String argumentName = request.parameters()
-                .get("name")
+        String nameValue = request.parameters()
+                .get("value")
                 .asString()
-                .orElse(null);
-
-        if ("name".equals(argumentName)) {
-            return McpCompletionContents.completion("events");
-        }
-        return McpCompletionContents.completion();
+                .orElse("");
+        List<String> values = calendar.readEventNames()
+                .stream()
+                .filter(name -> name.contains(nameValue))
+                .toList();
+        return McpCompletionContents.completion(values.toArray(new String[0]));
     }
 }

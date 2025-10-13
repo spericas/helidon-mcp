@@ -51,12 +51,12 @@ final class ListCalendarEventTool implements McpTool {
 
     @Override
     public String name() {
-        return "list-calendar-event";
+        return "list-calendar-events";
     }
 
     @Override
     public String description() {
-        return "List calendar events.";
+        return "List calendar events";
     }
 
     @Override

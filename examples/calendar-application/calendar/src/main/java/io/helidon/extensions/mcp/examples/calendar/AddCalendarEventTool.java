@@ -72,7 +72,7 @@ final class AddCalendarEventTool implements McpTool {
 
     @Override
     public String description() {
-        return "Adds a new event to the calendar.";
+        return "Adds a new event to the calendar";
     }
 
     @Override

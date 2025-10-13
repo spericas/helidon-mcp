@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -31,17 +32,16 @@ import io.helidon.extensions.mcp.server.McpException;
  * The calendar is a temporary file containing a list of created events.
  */
 final class Calendar {
-    static final String URI_TEMPLATE = "file://events/{name}";
+    static final String EVENTS_URI = "file://events";
+    static final String EVENTS_URI_TEMPLATE = EVENTS_URI + "/{name}";
 
     private final Path file;
     private final String uri;
-    private final String uriTemplate;
 
     Calendar() {
         try {
             this.file = Files.createTempFile("calendar", "-calendar");
             this.uri = file.toUri().toString();
-            this.uriTemplate = URI_TEMPLATE;
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -49,10 +49,6 @@ final class Calendar {
 
     String uri() {
         return uri;
-    }
-
-    String uriTemplate() {
-        return uriTemplate;
     }
 
     String readContent() {
@@ -72,6 +68,22 @@ final class Calendar {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    List<String> readEventNames() {
+        String prefix = "name: ";
+        List<String> values = new ArrayList<>();
+        String contents = readContent();
+        for (int i = 0; i < contents.length();) {
+            int k = contents.indexOf(prefix, i);
+            if (k == -1) {
+                break;
+            }
+            int j = contents.indexOf(", ", k);
+            values.add(contents.substring(k + prefix.length(), j));
+            i = j + 1;
+        }
+        return values;
     }
 
     void createNewEvent(String name, String date, List<String> attendees) {
