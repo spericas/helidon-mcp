@@ -89,7 +89,7 @@ abstract class BaseTest {
         assertThat(content, instanceOf(McpSchema.TextContent.class));
 
         McpSchema.TextContent textContent = (McpSchema.TextContent) content;
-        assertThat(textContent.text(), is("New event added to the calendar."));
+        assertThat(textContent.text(), is("New event added to the calendar"));
     }
 
     @Test
