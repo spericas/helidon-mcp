@@ -38,7 +38,7 @@ final class CalendarEventResourceTemplate implements McpResource {
 
     @Override
     public String uri() {
-        return calendar.uriTemplate();
+        return Calendar.EVENTS_URI_TEMPLATE;
     }
 
     @Override
@@ -63,7 +63,7 @@ final class CalendarEventResourceTemplate implements McpResource {
                   .get("name")
                   .asString()
                   .orElse("Unknown");
-          String content = calendar.readContentMatchesLine(line -> line.startsWith("Event: { name: " + name + ","));
+          String content = calendar.readContentMatchesLine(line -> line.contains("name: " + name));
           return List.of(McpResourceContents.textContent(content));
         };
     }

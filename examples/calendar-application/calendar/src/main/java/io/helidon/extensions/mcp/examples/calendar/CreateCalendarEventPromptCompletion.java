@@ -52,19 +52,14 @@ final class CreateCalendarEventPromptCompletion implements McpCompletion {
     }
 
     private McpCompletionContent complete(McpRequest request) {
-        String name = request.parameters()
+        String promptName = request.parameters()
                 .get("name")
                 .asString()
                 .orElse(null);
-        if ("name".equals(name)) {
+        if ("name".equals(promptName)) {
             return McpCompletionContents.completion("Frank & Friends");
         }
-
-        String date = request.parameters()
-                .get("name")
-                .asString()
-                .orElse(null);
-        if ("date".equals(date)) {
+        if ("date".equals(promptName)) {
             LocalDate today = LocalDate.now();
             String[] dates = new String[3];
             for (int i = 0; i < dates.length; i++) {
@@ -72,15 +67,9 @@ final class CreateCalendarEventPromptCompletion implements McpCompletion {
             }
             return McpCompletionContents.completion(dates);
         }
-
-        String attendees = request.parameters()
-                .get("name")
-                .asString()
-                .orElse(null);
-        if ("attendees".equals(attendees)) {
+        if ("attendees".equals(promptName)) {
             return McpCompletionContents.completion(FRIENDS);
         }
-
         // no completion
         return McpCompletionContents.completion();
     }

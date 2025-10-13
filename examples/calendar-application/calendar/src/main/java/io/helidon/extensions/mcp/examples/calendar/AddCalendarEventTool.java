@@ -72,7 +72,7 @@ final class AddCalendarEventTool implements McpTool {
 
     @Override
     public String description() {
-        return "Adds a new event to the calendar.";
+        return "Adds a new event to the calendar";
     }
 
     @Override
@@ -114,7 +114,7 @@ final class AddCalendarEventTool implements McpTool {
         features.subscriptions().sendUpdate(calendar.uri());
         progress.send(100);
 
-        return List.of(McpToolContents.textContent("New event added to the calendar."));
+        return List.of(McpToolContents.textContent("New event added to the calendar"));
     }
 
     private RuntimeException requiredArgument(String argument) {

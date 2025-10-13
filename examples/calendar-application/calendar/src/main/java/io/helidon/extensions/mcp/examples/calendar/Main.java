@@ -57,6 +57,6 @@ public class Main {
                         .addPrompt(new CreateCalendarEventPrompt())
                         .addCompletion(new CreateCalendarEventPromptCompletion())
                         .addResource(new CalendarEventResourceTemplate(calendar))
-                        .addCompletion(new CalendarEventResourceCompletion()));
+                        .addCompletion(new CalendarEventResourceCompletion(calendar)));
     }
 }

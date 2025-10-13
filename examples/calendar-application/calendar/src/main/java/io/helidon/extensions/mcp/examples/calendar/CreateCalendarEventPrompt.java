@@ -89,10 +89,11 @@ final class CreateCalendarEventPrompt implements McpPrompt {
 
         logger.debug("Argument successfully parsed from client request");
 
-        return List.of(McpPromptContents.textContent("""
-                                                     Create a new calendar event with name %s, at date %s and attendees %s. Make
-                                                     sure all attendees are free to attend the event.
-                                                     """.formatted(name, date, attendees), McpRole.USER));
+        return List.of(McpPromptContents.textContent(
+                """
+                        Create a new calendar event with name %s, on %s with attendees %s. Make
+                        sure all attendees are free to attend the event.
+                        """.formatted(name, date, attendees), McpRole.USER));
     }
 
     private RuntimeException requiredArgument(String argument) {

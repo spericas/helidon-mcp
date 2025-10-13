@@ -62,7 +62,7 @@ class McpCalendarServer {
      * @return list of calendar events
      */
     @Mcp.Tool("List calendar events")
-    List<McpToolContent> listCalendarEvent(String date) {
+    List<McpToolContent> listCalendarEvents(String date) {
         String entries = calendar.readContentMatchesLine(
                 line -> date.isEmpty() || line.contains("date: " + date));
         return List.of(McpToolContents.textContent(entries));
