@@ -27,13 +27,13 @@ When the MCP Inspector starts, it will automatically open a new browser window. 
 MCP server:
 
 1. On the left panel of the Inspector UI, configure the connection settings.
-2. Set the **Transport** to `SSE`.
+2. Set the **Transport** to `SSE` or `Stremeable HTTP`.
 3. Update the **URL** field to: `http://localhost:8081/calendar`
 4. Click the **Connect** button to establish a connection to the server.
 
 ### Testing the Tool
 
-1. Navigate to the **Tool** tab.
+1. Navigate to the **Tools** tab.
 2. Click **List Tools** and select the `addCalendarEventTool` tool from the list.
 3. Enter the following parameters on the right panel:
 
@@ -45,14 +45,14 @@ MCP server:
 
 ### Testing the Resource
 
-1. Navigate to the **Resource** tab.
+1. Navigate to the **Resources** tab.
 2. Click **List Resources**.
 3. Select the first resource in the list.
 4. Verify that the result displayed includes Frank's birthday event.
 
 ### Testing the Resource Template
 
-1. Navigate to the **Resource** tab.
+1. Navigate to the **Resources** tab.
 2. Click **List Resources Template**.
 3. Select `eventResourceTemplate`.
 3. Type `F` for the name to trigger completion.
