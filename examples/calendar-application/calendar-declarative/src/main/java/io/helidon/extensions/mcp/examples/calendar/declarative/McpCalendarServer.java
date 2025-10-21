@@ -94,7 +94,7 @@ class McpCalendarServer {
         progress.send(0);
         calendar.createNewEvent(name, date, attendees);
         progress.send(50);
-        features.subscriptions().sendUpdate(calendar.uri());
+        features.subscriptions().sendUpdate(EVENTS_URI);
         progress.send(100);
 
         return List.of(McpToolContents.textContent("New event added to the calendar"));

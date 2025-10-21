@@ -36,19 +36,13 @@ final class Calendar {
     static final String EVENTS_URI_TEMPLATE = EVENTS_URI + "/{name}";
 
     private final Path file;
-    private final String uri;
 
     Calendar() {
         try {
             this.file = Files.createTempFile("calendar", "-calendar");
-            this.uri = file.toUri().toString();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
-    }
-
-    String uri() {
-        return uri;
     }
 
     String readContent() {

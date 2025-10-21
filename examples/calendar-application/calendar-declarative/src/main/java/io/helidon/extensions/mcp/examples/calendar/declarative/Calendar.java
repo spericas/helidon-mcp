@@ -36,19 +36,13 @@ import io.helidon.service.registry.Service;
 final class Calendar {
 
     private final Path file;
-    private final String uri;
 
     Calendar() {
         try {
             this.file = Files.createTempFile("calendar", "-calendar");
-            this.uri = file.toUri().toString();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
-    }
-
-    String uri() {
-        return uri;
     }
 
     String readContent() {

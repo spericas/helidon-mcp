@@ -30,6 +30,8 @@ import io.helidon.extensions.mcp.server.McpTool;
 import io.helidon.extensions.mcp.server.McpToolContent;
 import io.helidon.extensions.mcp.server.McpToolContents;
 
+import static io.helidon.extensions.mcp.examples.calendar.Calendar.EVENTS_URI;
+
 /**
  * MCP tool to add a new Event to the calendar.
  */
@@ -111,7 +113,7 @@ final class AddCalendarEventTool implements McpTool {
 
         progress.send(50);
         calendar.createNewEvent(name, date, attendees);
-        features.subscriptions().sendUpdate(calendar.uri());
+        features.subscriptions().sendUpdate(EVENTS_URI);
         progress.send(100);
 
         return List.of(McpToolContents.textContent("New event added to the calendar"));
