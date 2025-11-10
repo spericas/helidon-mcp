@@ -13,35 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.helidon.extensions.mcp.server;
 
+import io.helidon.common.media.type.MediaType;
+
 /**
- * Text content.
+ * MCP sampling media content.
  */
-sealed interface McpTextContent extends McpContent permits McpTextContent.McpTextContentImpl {
+public sealed interface McpSamplingMediaMessage permits McpSamplingAudioMessage, McpSamplingImageMessage {
     /**
-     * Text content as string.
+     * Image content raw data.
      *
-     * @return text
+     * @return content
      */
-    String text();
+    byte[] data();
 
-    final class McpTextContentImpl implements McpTextContent {
-        private final String text;
+    /**
+     * Returns the decoded image data using base64 decoder.
+     *
+     * @return decoded content.
+     */
+    byte[] decodeBase64Data();
 
-        McpTextContentImpl(String text) {
-            this.text = text;
-        }
+    /**
+     * Returns the encoded image data using base64 encoder.
+     *
+     * @return content in base64.
+     */
+    String encodeBase64Data();
 
-        @Override
-        public String text() {
-            return text;
-        }
-
-        @Override
-        public ContentType type() {
-            return ContentType.TEXT;
-        }
-    }
+    /**
+     * Image content MIME type.
+     *
+     * @return MIME type
+     */
+    MediaType mediaType();
 }

@@ -494,6 +494,20 @@ List<McpToolContent> cancellationTool(McpCancellation cancellation) {
 }
 ```
 
+### Sampling
+
+See the full [sampling documentation details](../mcp/README.md#sampling)
+
+#### Example
+
+Below is an example of a tool that uses the Sampling feature. `McpSampling` object can be used as method parameter.
+
+```java
+@Mcp.Tool("Uses MCP Sampling to ask the connected client model.")
+List<McpToolContent> samplingTool(McpSampling sampling) {
+}
+```
+
 ## References
 
 - [MCP Specification](https://modelcontextprotocol.io/introduction)

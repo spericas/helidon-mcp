@@ -16,19 +16,21 @@
 
 package io.helidon.extensions.mcp.server;
 
-enum McpCapability {
-    TOOL_LIST_CHANGED,
-    RESOURCE_LIST_CHANGED,
-    RESOURCE_SUBSCRIBE,
-    PROMPT_LIST_CHANGED,
-    LOGGING,
-    COMPLETION,
-    PAGINATION,
-    SAMPLING,
-    ROOTS,
-    PROGRESS;
+/**
+ * MCP sampling message.
+ */
+public sealed interface McpSamplingMessage permits McpSamplingTextMessage, McpSamplingImageMessage, McpSamplingAudioMessage {
+    /**
+     * Sampling message role.
+     *
+     * @return role
+     */
+    McpRole role();
 
-    String text() {
-        return this.name().toLowerCase();
-    }
+    /**
+     * Sampling message type.
+     *
+     * @return type
+     */
+    McpSamplingMessageType type();
 }

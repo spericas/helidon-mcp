@@ -13,22 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.helidon.extensions.mcp.server;
 
-enum McpCapability {
-    TOOL_LIST_CHANGED,
-    RESOURCE_LIST_CHANGED,
-    RESOURCE_SUBSCRIBE,
-    PROMPT_LIST_CHANGED,
-    LOGGING,
-    COMPLETION,
-    PAGINATION,
-    SAMPLING,
-    ROOTS,
-    PROGRESS;
+/**
+ * MCP sampling image content.
+ */
+public sealed interface McpSamplingImageMessage extends McpSamplingMessage,
+                                                        McpSamplingMediaMessage permits McpSamplingImageMessageImpl {
 
-    String text() {
-        return this.name().toLowerCase();
-    }
 }
